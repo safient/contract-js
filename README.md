@@ -12,9 +12,9 @@ Provides functionality of client interaction with SafientMain and Arbitrator con
 ## Initialization
 
 ```javascript
-import { Claims } from 'safient--claims';
+import { SafientClaims } from 'safient-claims';
 
-const sc = new Claims(
+const sc = new SafientClaims(
     injectedProvider,
     SafientMainABI,
     SafientMainAddress,

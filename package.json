@@ -1,6 +1,6 @@
 {
   "name": "safient-claims",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Provides functionality of client interaction with SafientMain and Arbitrator contracts.",
   "keywords": [
     "Blockchain",
