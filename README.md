@@ -6,6 +6,24 @@ Provides functionality of client interaction with SafientMain and Arbitrator con
 ## Installation
 
 ```bash
+  git clone https://github.com/safient/safient-claims-js.git
+  cd safient-claims-js
+  npm install
+```
+## Running Tests
+
+Terminal 1
+```bash
+  npm run chain
+```
+
+Terminal 2
+```bash
+  npm run test
+```
+## Package Installation
+
+```bash
   npm i safient-claims
 ```
 
@@ -16,9 +34,7 @@ import { SafientClaims } from 'safient-claims';
 
 const sc = new SafientClaims(
     injectedProvider,
-    SafientMainABI,
     SafientMainAddress,
-    ArbitratorABI,
     ArbitratorAddress
 );
 ```
@@ -112,6 +128,7 @@ const createClaim = async(safeId, evidenceURI) => {
 | :-------- | :------- | :------------------------- |
 | `safeId` | `number` | **Required**. Id of the safe|
 | `evidenceURI` | `string` | **Required**. IPFS URI pointing to the evidence submitted by the claim creator|
+| `signer` | `string` | **Optional & for test only**. Specific signer account for test purpose|
 
 <br />
 
@@ -136,6 +153,7 @@ const submitEvidence = async(disputeId, evidenceURI) => {
 | :-------- | :------- | :------------------------- |
 | `disputeId` | `number` | **Required**. Id of the dispute representing the claim|
 | `evidenceURI` | `string` | **Required**. IPFS URI pointing to the evidence submitted by the claim creator|
+| `signer` | `string` | **Optional & for test only**. Specific signer account for test purpose|
 
 <br />
 
@@ -185,6 +203,7 @@ const recoverSafeFunds = async(safeId) => {
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
 | `safeId` | `number` | **Required**. Id of the safe|
+| `signer` | `string` | **Optional & for test only**. Specific signer account for test purpose|
 
 <br />
 
@@ -210,6 +229,7 @@ const setTotalClaimsAllowed = async(claimsAllowed) => {
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
 | `claimsAllowed` | `number` | **Required**. Number of total claims allowed|
+| `signer` | `string` | **Optional & for test only**. Specific signer account for test purpose|
 
 <br />
 

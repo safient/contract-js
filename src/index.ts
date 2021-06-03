@@ -6,14 +6,8 @@ export class SafientClaims {
   safientMain: SafientMain;
   arbitrator: Arbitrator;
 
-  constructor(
-    providerOrUrl: ProviderOrUrl,
-    safientMainABI: ContractABI,
-    safientMainAddress: ContractAddress,
-    arbitratorABI: ContractABI,
-    arbitratorAddress: ContractAddress
-  ) {
-    this.safientMain = new SafientMain(providerOrUrl, safientMainABI, safientMainAddress);
-    this.arbitrator = new Arbitrator(providerOrUrl, arbitratorABI, arbitratorAddress);
+  constructor(providerOrUrl: ProviderOrUrl, safientMainAddress: ContractAddress, arbitratorAddress: ContractAddress) {
+    this.safientMain = new SafientMain(providerOrUrl, safientMainAddress);
+    this.arbitrator = new Arbitrator(providerOrUrl, arbitratorAddress);
   }
 }

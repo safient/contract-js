@@ -1,3 +1,4 @@
+import SafientMainABI from '../abis/SafientMain';
 import { Safe, Claim, Tx, Provider, ContractAddress, ContractABI, ProviderOrUrl, Signer } from '../types/Types';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { Contract } from '@ethersproject/contracts';
@@ -10,6 +11,7 @@ export class SafientMain {
   private provider: Provider;
   private safientMainABI: ContractABI;
   private safientMainAddress: ContractAddress;
+  private providerType: string;
   private logger: Logger;
 
   /**
@@ -18,14 +20,16 @@ export class SafientMain {
    * @param safientMainABI - SafientMain contract ABI
    * @param safientMainAddress - SafientMain contract address
    */
-  constructor(providerOrUrl: ProviderOrUrl, safientMainABI: ContractABI, safientMainAddress: ContractAddress) {
+  constructor(providerOrUrl: ProviderOrUrl, safientMainAddress: ContractAddress) {
     if (isAddress(safientMainAddress)) {
       if (typeof providerOrUrl === 'string') {
         this.provider = new JsonRpcProvider(providerOrUrl);
+        this.providerType = 'TestJsonRpc';
       } else if (typeof providerOrUrl === 'object') {
         this.provider = providerOrUrl;
+        this.providerType = 'Web3';
       }
-      this.safientMainABI = safientMainABI;
+      this.safientMainABI = SafientMainABI;
       this.safientMainAddress = safientMainAddress;
       this.logger = Logger.globalLogger();
     }
@@ -34,12 +38,14 @@ export class SafientMain {
   /**
    * Get the signer object from a provider
    * @param provider - Provider object like JsonRpcProvider or Web3Provider
+   * @param [signer] - Specific signer account for test purpose
    * @returns The signer object
    */
-  private getSignerFromProvider = async (provider: Provider): Promise<Signer> => {
+  private getSignerFromProvider = async (provider: Provider, signer?: number): Promise<Signer> => {
     try {
-      const signer = await provider.getSigner();
-      return signer;
+      let signer_;
+      signer !== undefined ? (signer_ = await provider.getSigner(signer)) : (signer_ = await provider.getSigner());
+      return signer_;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -47,12 +53,16 @@ export class SafientMain {
 
   /**
    * Get the SafientMain contract instance
+   * @param [signer] - Specific signer account for test purpose
    * @returns The SafientMain contract instance associated with the signer
    */
-  private getContractInstance = async (): Promise<Contract> => {
+  private getContractInstance = async (signer?: number): Promise<Contract> => {
     try {
-      const signer = await this.getSignerFromProvider(this.provider);
-      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, signer);
+      let signer_;
+      signer !== undefined
+        ? (signer_ = await this.getSignerFromProvider(this.provider, signer))
+        : (signer_ = await this.getSignerFromProvider(this.provider));
+      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, signer_);
       return contractInstance;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -80,11 +90,15 @@ export class SafientMain {
    * Create a claim on a safe
    * @param safeId - Id of the safe
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
+   * @param [signer] - Specific signer account for test purpose
    * @returns A transaction response
    */
-  createClaim = async (safeId: number, evidenceURI: string): Promise<Tx> => {
+  createClaim = async (safeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
     try {
-      const contract = await this.getContractInstance();
+      let contract;
+      this.providerType === 'TestJsonRpc'
+        ? (contract = await this.getContractInstance(signer))
+        : (contract = await this.getContractInstance());
       const tx = await contract.createClaim(safeId, evidenceURI);
       return tx;
     } catch (e) {
@@ -111,11 +125,15 @@ export class SafientMain {
   /**
    * Recover funds from a safe - only safe's current owner can execute this
    * @param safeId - Id of the safe
+   * @param [signer] - Specific signer account for test purpose
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeId: number): Promise<Tx> => {
+  recoverSafeFunds = async (safeId: number, signer?: number): Promise<Tx> => {
     try {
-      const contract = await this.getContractInstance();
+      let contract;
+      this.providerType === 'TestJsonRpc'
+        ? (contract = await this.getContractInstance(signer))
+        : (contract = await this.getContractInstance());
       const tx = await contract.recoverSafeFunds(safeId);
       return tx;
     } catch (e) {
@@ -127,11 +145,15 @@ export class SafientMain {
    * Submit the evidence supporting the claim - only claim creator can execute this
    * @param disputeId - Id of the dispute representing the claim
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
+   * @param [signer] - Specific signer account for test purpose
    * @returns A transaction response
    */
-  submitEvidence = async (disputeId: number, evidenceURI: string): Promise<Tx> => {
+  submitEvidence = async (disputeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
     try {
-      const contract = await this.getContractInstance();
+      let contract;
+      this.providerType === 'TestJsonRpc'
+        ? (contract = await this.getContractInstance(signer))
+        : (contract = await this.getContractInstance());
       const tx = await contract.submitEvidence(disputeId, evidenceURI);
       return tx;
     } catch (e) {
@@ -142,11 +164,15 @@ export class SafientMain {
   /**
    * Set a new value for the total claims allowed on a safe, only SafientMain contract deployer can execute this
    * @param claimsAllowed - Number of total claims allowed
+   * @param [signer] - Specific signer account for test purpose
    * @returns A transaction response
    */
-  setTotalClaimsAllowed = async (claimsAllowed: number): Promise<Tx> => {
+  setTotalClaimsAllowed = async (claimsAllowed: number, signer?: number): Promise<Tx> => {
     try {
-      const contract = await this.getContractInstance();
+      let contract;
+      this.providerType === 'TestJsonRpc'
+        ? (contract = await this.getContractInstance(signer))
+        : (contract = await this.getContractInstance());
       const tx = await contract.setTotalClaimsAllowed(claimsAllowed);
       return tx;
     } catch (e) {
@@ -220,7 +246,7 @@ export class SafientMain {
       if (safeId === 0 || safeId > Number(safesCount)) {
         this.logger.throwArgumentError('Safe Id does not exist', 'safeId', safeId);
       } else {
-        const safe: Safe = await contract.safess(safeId);
+        const safe: Safe = await contract.safes(safeId);
         return safe;
       }
     } catch (e) {

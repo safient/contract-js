@@ -1,4 +1,5 @@
-import { Tx, Provider, ContractAddress, ContractABI, ProviderOrUrl, Signer } from '../types/Types';
+import ArbitratorABI from '../abis/Arbitrator';
+import { Provider, ContractAddress, ContractABI, ProviderOrUrl, Signer } from '../types/Types';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -18,14 +19,14 @@ export class Arbitrator {
    * @param arbitratorABI - Arbitrator contract ABI
    * @param arbitratorAddress - Arbitrator contract address
    */
-  constructor(providerOrUrl: ProviderOrUrl, arbitratorABI: ContractABI, arbitratorAddress: ContractAddress) {
+  constructor(providerOrUrl: ProviderOrUrl, arbitratorAddress: ContractAddress) {
     if (isAddress(arbitratorAddress)) {
       if (typeof providerOrUrl === 'string') {
         this.provider = new JsonRpcProvider(providerOrUrl);
       } else if (typeof providerOrUrl === 'object') {
         this.provider = providerOrUrl;
       }
-      this.arbitratorABI = arbitratorABI;
+      this.arbitratorABI = ArbitratorABI;
       this.arbitratorAddress = arbitratorAddress;
       this.logger = Logger.globalLogger();
     }
