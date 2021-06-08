@@ -19,20 +19,14 @@ export class Arbitrator {
    */
   constructor(provider: Provider, chainId: number) {
     this.logger = Logger.globalLogger();
-
     this.provider = provider;
     this.arbitratorABI = arbitratorABI;
 
-    for (let i = 0; i < networks.length; i++) {
-      if (chainId === networks[i].chainId && networks[i].addresses.arbitrator !== '') {
-        this.arbitratorAddress = networks[i].addresses.arbitrator;
-        break;
-      } else {
-        if (i === networks.length - 1) {
-          this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
-        }
-      }
-    }
+    const network = networks.find((network) => chainId === network.chainId);
+
+    network !== undefined && network.addresses.arbitrator !== ''
+      ? (this.arbitratorAddress = network.addresses.arbitrator)
+      : this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
   }
 
   /**

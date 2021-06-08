@@ -20,22 +20,16 @@ export class SafientMain {
    */
   constructor(provider: Provider, chainId: number) {
     this.logger = Logger.globalLogger();
-
     this.provider = provider;
     this.safientMainABI = safientMainABI;
 
     chainId === 31337 ? (this.providerType = 'testRpc') : (this.providerType = 'injectedWeb3');
 
-    for (let i = 0; i < networks.length; i++) {
-      if (chainId === networks[i].chainId && networks[i].addresses.safientMain !== '') {
-        this.safientMainAddress = networks[i].addresses.safientMain;
-        break;
-      } else {
-        if (i === networks.length - 1) {
-          this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
-        }
-      }
-    }
+    const network = networks.find((network) => chainId === network.chainId);
+
+    network !== undefined && network.addresses.safientMain !== ''
+      ? (this.safientMainAddress = network.addresses.safientMain)
+      : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
   }
 
   /**
