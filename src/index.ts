@@ -1,4 +1,4 @@
-import { ContractAddress, ContractABI, ProviderOrUrl } from './types/Types';
+import { Provider } from './types/Types';
 import { SafientMain } from './contracts/SafientMain';
 import { Arbitrator } from './contracts/Arbitrator';
 
@@ -6,8 +6,8 @@ export class SafientClaims {
   safientMain: SafientMain;
   arbitrator: Arbitrator;
 
-  constructor(providerOrUrl: ProviderOrUrl, safientMainAddress: ContractAddress, arbitratorAddress: ContractAddress) {
-    this.safientMain = new SafientMain(providerOrUrl, safientMainAddress);
-    this.arbitrator = new Arbitrator(providerOrUrl, arbitratorAddress);
+  constructor(provider: Provider, chainId: number) {
+    this.safientMain = new SafientMain(provider, chainId);
+    this.arbitrator = new Arbitrator(provider, chainId);
   }
 }

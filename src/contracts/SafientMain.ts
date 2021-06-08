@@ -1,10 +1,9 @@
-import SafientMainABI from '../abis/SafientMain';
-import { Safe, Claim, Tx, Provider, ContractAddress, ContractABI, ProviderOrUrl, Signer } from '../types/Types';
-import { JsonRpcProvider } from '@ethersproject/providers';
+import { safientMainABI } from '../abis/SafientMain';
+import { networks } from '../networks/networks';
+import { Safe, Claim, Tx, Provider, ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
-import { isAddress } from '@ethersproject/address';
 import { Logger } from '@ethersproject/logger';
 
 export class SafientMain {
@@ -15,23 +14,27 @@ export class SafientMain {
   private logger: Logger;
 
   /**
-   * SafientMain Constructor
-   * @param providerOrUrl - Injected provider object like metamask or JsonRpcUrl like http://localhost:8545
-   * @param safientMainABI - SafientMain contract ABI
-   * @param safientMainAddress - SafientMain contract address
+   * Arbitrator Constructor
+   * @param provider - Provider object ex: injected web3 provider like metamask
+   * @param chainId - Provider chainId
    */
-  constructor(providerOrUrl: ProviderOrUrl, safientMainAddress: ContractAddress) {
-    if (isAddress(safientMainAddress)) {
-      if (typeof providerOrUrl === 'string') {
-        this.provider = new JsonRpcProvider(providerOrUrl);
-        this.providerType = 'TestJsonRpc';
-      } else if (typeof providerOrUrl === 'object') {
-        this.provider = providerOrUrl;
-        this.providerType = 'Web3';
+  constructor(provider: Provider, chainId: number) {
+    this.logger = Logger.globalLogger();
+
+    this.provider = provider;
+    this.safientMainABI = safientMainABI;
+
+    chainId === 31337 ? (this.providerType = 'testRpc') : (this.providerType = 'injectedWeb3');
+
+    for (let i = 0; i < networks.length; i++) {
+      if (chainId === networks[i].chainId && networks[i].addresses.safientMain !== '') {
+        this.safientMainAddress = networks[i].addresses.safientMain;
+        break;
+      } else {
+        if (i === networks.length - 1) {
+          this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
+        }
       }
-      this.safientMainABI = SafientMainABI;
-      this.safientMainAddress = safientMainAddress;
-      this.logger = Logger.globalLogger();
     }
   }
 
@@ -90,13 +93,13 @@ export class SafientMain {
    * Create a claim on a safe
    * @param safeId - Id of the safe
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose
+   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
   createClaim = async (safeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
     try {
       let contract;
-      this.providerType === 'TestJsonRpc'
+      this.providerType === 'testRpc'
         ? (contract = await this.getContractInstance(signer))
         : (contract = await this.getContractInstance());
       const tx = await contract.createClaim(safeId, evidenceURI);
@@ -125,13 +128,13 @@ export class SafientMain {
   /**
    * Recover funds from a safe - only safe's current owner can execute this
    * @param safeId - Id of the safe
-   * @param [signer] - Specific signer account for test purpose
+   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
   recoverSafeFunds = async (safeId: number, signer?: number): Promise<Tx> => {
     try {
       let contract;
-      this.providerType === 'TestJsonRpc'
+      this.providerType === 'testRpc'
         ? (contract = await this.getContractInstance(signer))
         : (contract = await this.getContractInstance());
       const tx = await contract.recoverSafeFunds(safeId);
@@ -145,13 +148,13 @@ export class SafientMain {
    * Submit the evidence supporting the claim - only claim creator can execute this
    * @param disputeId - Id of the dispute representing the claim
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose
+   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
   submitEvidence = async (disputeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
     try {
       let contract;
-      this.providerType === 'TestJsonRpc'
+      this.providerType === 'testRpc'
         ? (contract = await this.getContractInstance(signer))
         : (contract = await this.getContractInstance());
       const tx = await contract.submitEvidence(disputeId, evidenceURI);
@@ -164,13 +167,13 @@ export class SafientMain {
   /**
    * Set a new value for the total claims allowed on a safe, only SafientMain contract deployer can execute this
    * @param claimsAllowed - Number of total claims allowed
-   * @param [signer] - Specific signer account for test purpose
+   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
   setTotalClaimsAllowed = async (claimsAllowed: number, signer?: number): Promise<Tx> => {
     try {
       let contract;
-      this.providerType === 'TestJsonRpc'
+      this.providerType === 'testRpc'
         ? (contract = await this.getContractInstance(signer))
         : (contract = await this.getContractInstance());
       const tx = await contract.setTotalClaimsAllowed(claimsAllowed);

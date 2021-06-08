@@ -21,8 +21,6 @@ const signers = [
   '0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199',
 ];
 
-const jsonRpcUrl = 'http://localhost:8545';
-
 const metaevidenceOrEvidenceURI =
   'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/';
 

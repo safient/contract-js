@@ -1,10 +1,9 @@
-import ArbitratorABI from '../abis/Arbitrator';
-import { Provider, ContractAddress, ContractABI, ProviderOrUrl, Signer } from '../types/Types';
-import { JsonRpcProvider } from '@ethersproject/providers';
+import { arbitratorABI } from '../abis/Arbitrator';
+import { networks } from '../networks/networks';
+import { Provider, ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
-import { isAddress } from '@ethersproject/address';
 import { Logger } from '@ethersproject/logger';
 
 export class Arbitrator {
@@ -15,20 +14,24 @@ export class Arbitrator {
 
   /**
    * Arbitrator Constructor
-   * @param providerOrUrl - Injected provider object like metamask or JsonRpcUrl like http://localhost:8545
-   * @param arbitratorABI - Arbitrator contract ABI
-   * @param arbitratorAddress - Arbitrator contract address
+   * @param provider - Provider object ex: injected web3 provider like metamask
+   * @param chainId - Provider chainId
    */
-  constructor(providerOrUrl: ProviderOrUrl, arbitratorAddress: ContractAddress) {
-    if (isAddress(arbitratorAddress)) {
-      if (typeof providerOrUrl === 'string') {
-        this.provider = new JsonRpcProvider(providerOrUrl);
-      } else if (typeof providerOrUrl === 'object') {
-        this.provider = providerOrUrl;
+  constructor(provider: Provider, chainId: number) {
+    this.logger = Logger.globalLogger();
+
+    this.provider = provider;
+    this.arbitratorABI = arbitratorABI;
+
+    for (let i = 0; i < networks.length; i++) {
+      if (chainId === networks[i].chainId && networks[i].addresses.arbitrator !== '') {
+        this.arbitratorAddress = networks[i].addresses.arbitrator;
+        break;
+      } else {
+        if (i === networks.length - 1) {
+          this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
+        }
       }
-      this.arbitratorABI = ArbitratorABI;
-      this.arbitratorAddress = arbitratorAddress;
-      this.logger = Logger.globalLogger();
     }
   }
 

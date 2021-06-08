@@ -1,14 +1,24 @@
 const { ethers } = require('hardhat');
+const { JsonRpcProvider } = require('@ethersproject/providers');
 const chai = require('chai');
+
 const expect = chai.expect;
+
 chai.use(require('chai-as-promised'));
 
-const { signers, jsonRpcUrl, metaevidenceOrEvidenceURI } = require('./constants');
-
+const { signers, metaevidenceOrEvidenceURI } = require('./constants');
 const { SafientClaims } = require('safient-claims');
 
+let provider, chainId;
+
+(async () => {
+  provider = new JsonRpcProvider('http://localhost:8545');
+  const providerNetworkData = await provider.getNetwork();
+  chainId = providerNetworkData.chainId;
+})();
+
 describe('safientMain', async () => {
-  let arbitrator, safientMain, arbitratorAddress, safientMainAddress;
+  let arbitrator, safientMain;
 
   describe('SafientMain Flow', async () => {
     it('Should deploy SafientMain', async () => {
@@ -28,7 +38,7 @@ describe('safientMain', async () => {
     });
 
     it('Should allow users to create a safe', async () => {
-      const sc = new SafientClaims(jsonRpcUrl, safientMainAddress, arbitratorAddress);
+      const sc = new SafientClaims(provider, chainId);
 
       const fee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
 
@@ -81,7 +91,7 @@ describe('safientMain', async () => {
     });
 
     it('Should allow users to create a claim', async () => {
-      const sc = new SafientClaims(jsonRpcUrl, safientMainAddress, arbitratorAddress);
+      const sc = new SafientClaims(provider, chainId);
 
       // FAILURE : safe does not exist
       await expect(
@@ -131,7 +141,7 @@ describe('safientMain', async () => {
     });
 
     it('Should allow users to deposit funds in a safe', async () => {
-      const sc = new SafientClaims(jsonRpcUrl, safientMainAddress, arbitratorAddress);
+      const sc = new SafientClaims(provider, chainId);
 
       // FAILURE : safe does not exist
       await expect(sc.safientMain.depositSafeFunds(4, String(ethers.utils.parseEther('2')))).to.be.rejectedWith(Error);
@@ -143,7 +153,7 @@ describe('safientMain', async () => {
     });
 
     it('Should allow the safe owner to recover funds in the safe', async () => {
-      const sc = new SafientClaims(jsonRpcUrl, safientMainAddress, arbitratorAddress);
+      const sc = new SafientClaims(provider, chainId);
 
       // FAILURE : safe does not exist
       await expect(sc.safientMain.recoverSafeFunds(4)).to.be.rejectedWith(Error);
@@ -164,7 +174,7 @@ describe('safientMain', async () => {
     });
 
     it('Should allow admin to set the total number of claims allowed on a safe', async () => {
-      const sc = new SafientClaims(jsonRpcUrl, safientMainAddress, arbitratorAddress);
+      const sc = new SafientClaims(provider, chainId);
 
       // FAILURE : only SafexMain contract's admin can execute this
       await expect(

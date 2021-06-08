@@ -1,10 +1,11 @@
 {
   "name": "safient-claims",
-  "version": "1.0.9",
-  "description": "Provides functionality of client interaction with SafientMain and Arbitrator contracts.",
+  "version": "1.1.0",
+  "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Blockchain",
-    "Ethereum"
+    "Ethereum",
+    "Safient"
   ],
   "scripts": {
     "prettier": "prettier --write 'contracts/**/*.sol'",
@@ -38,6 +39,6 @@
     "ethers": "^5.3.0",
     "hardhat": "^2.3.0",
     "ramda": "^0.27.1",
-    "safient-claims": "^1.0.9"
+    "safient-claims": "^1.1.0"
   }
 }
