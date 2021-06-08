@@ -26,6 +26,5 @@ const metaevidenceOrEvidenceURI =
 
 module.exports = {
   signers,
-  jsonRpcUrl,
   metaevidenceOrEvidenceURI,
 };
