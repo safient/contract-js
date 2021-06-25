@@ -23,7 +23,6 @@ export type Claim = {
 };
 
 export type Tx = TransactionResponse;
-export type Provider = JsonRpcProvider | Web3Provider;
 export type ContractAddress = string;
 export type ContractABI = ContractInterface | object[];
 export type Signer = JsonRpcSigner;

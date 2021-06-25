@@ -1,31 +1,27 @@
 import { safientMainABI } from '../abis/SafientMain';
-import { networks } from '../networks/networks';
-import { Safe, Claim, Tx, Provider, ContractAddress, ContractABI, Signer } from '../types/Types';
+import { Safe, Claim, Tx, ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
-
+import networks from '../networks.json';
 export class SafientMain {
-  private provider: Provider;
+  private signer: Signer;
   private safientMainABI: ContractABI;
   private safientMainAddress: ContractAddress;
-  private providerType: string;
   private logger: Logger;
 
   /**
    * Arbitrator Constructor
-   * @param provider - Provider object ex: injected web3 provider like metamask
+   * @param signer - Signer object
    * @param chainId - Provider chainId
    */
-  constructor(provider: Provider, chainId: number) {
+  constructor(signer: Signer, chainId: number) {
     this.logger = Logger.globalLogger();
-    this.provider = provider;
+    this.signer = signer;
     this.safientMainABI = safientMainABI;
 
-    chainId === 31337 ? (this.providerType = 'testRpc') : (this.providerType = 'injectedWeb3');
-
-    const network = networks.find((network) => chainId === network.chainId);
+    const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.safientMain !== ''
       ? (this.safientMainAddress = network.addresses.safientMain)
@@ -33,33 +29,12 @@ export class SafientMain {
   }
 
   /**
-   * Get the signer object from a provider
-   * @param provider - Provider object like JsonRpcProvider or Web3Provider
-   * @param [signer] - Specific signer account for test purpose
-   * @returns The signer object
-   */
-  private getSignerFromProvider = async (provider: Provider, signer?: number): Promise<Signer> => {
-    try {
-      let signer_;
-      signer !== undefined ? (signer_ = await provider.getSigner(signer)) : (signer_ = await provider.getSigner());
-      return signer_;
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
    * Get the SafientMain contract instance
-   * @param [signer] - Specific signer account for test purpose
    * @returns The SafientMain contract instance associated with the signer
    */
-  private getContractInstance = async (signer?: number): Promise<Contract> => {
+  private getContractInstance = async (): Promise<Contract> => {
     try {
-      let signer_;
-      signer !== undefined
-        ? (signer_ = await this.getSignerFromProvider(this.provider, signer))
-        : (signer_ = await this.getSignerFromProvider(this.provider));
-      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, signer_);
+      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, this.signer);
       return contractInstance;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -87,15 +62,11 @@ export class SafientMain {
    * Create a claim on a safe
    * @param safeId - Id of the safe
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  createClaim = async (safeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
+  createClaim = async (safeId: number, evidenceURI: string): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.createClaim(safeId, evidenceURI);
       return tx;
     } catch (e) {
@@ -122,15 +93,11 @@ export class SafientMain {
   /**
    * Recover funds from a safe - only safe's current owner can execute this
    * @param safeId - Id of the safe
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeId: number, signer?: number): Promise<Tx> => {
+  recoverSafeFunds = async (safeId: number): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.recoverSafeFunds(safeId);
       return tx;
     } catch (e) {
@@ -142,15 +109,11 @@ export class SafientMain {
    * Submit the evidence supporting the claim - only claim creator can execute this
    * @param disputeId - Id of the dispute representing the claim
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  submitEvidence = async (disputeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
+  submitEvidence = async (disputeId: number, evidenceURI: string): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.submitEvidence(disputeId, evidenceURI);
       return tx;
     } catch (e) {
@@ -161,15 +124,11 @@ export class SafientMain {
   /**
    * Set a new value for the total claims allowed on a safe, only SafientMain contract deployer can execute this
    * @param claimsAllowed - Number of total claims allowed
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  setTotalClaimsAllowed = async (claimsAllowed: number, signer?: number): Promise<Tx> => {
+  setTotalClaimsAllowed = async (claimsAllowed: number): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.setTotalClaimsAllowed(claimsAllowed);
       return tx;
     } catch (e) {

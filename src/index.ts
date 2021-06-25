@@ -1,13 +1,15 @@
-import { Provider } from './types/Types';
+import { Signer } from './types/Types';
 import { SafientMain } from './contracts/SafientMain';
 import { Arbitrator } from './contracts/Arbitrator';
+
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 export class SafientClaims {
   safientMain: SafientMain;
   arbitrator: Arbitrator;
 
-  constructor(provider: Provider, chainId: number) {
-    this.safientMain = new SafientMain(provider, chainId);
-    this.arbitrator = new Arbitrator(provider, chainId);
+  constructor(signer: Signer, chainId: number) {
+    this.safientMain = new SafientMain(signer, chainId);
+    this.arbitrator = new Arbitrator(signer, chainId);
   }
 }

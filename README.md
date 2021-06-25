@@ -1,4 +1,4 @@
-# Safient Claims
+# Safient Claims SDK
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
@@ -37,8 +37,9 @@ Terminal 2
 const { JsonRpcProvider } = require('@ethersproject/providers');
 const provider = new JsonRpcProvider('http://localhost:8545');
 
-// Get chainId from provider
+// Get signer and chainId from provider
 (async () => {
+  const signer = await provider.getSigner();
   const providerNetwork = await provider.getNetwork();
   const chainId = providerNetwork.chainId;
 })();
@@ -49,7 +50,7 @@ const provider = new JsonRpcProvider('http://localhost:8545');
 ```javascript
 import { SafientClaims } from 'safient-claims';
 
-const sc = new SafientClaims(provider, chainId);
+const sc = new SafientClaims(signer, chainId);
 ```
 
 ### Arbitrator
@@ -144,7 +145,6 @@ const createClaim = async (safeId, evidenceURI) => {
 | :------------ | :------- | :----------------------------------------------------------------------------- |
 | `safeId`      | `number` | **Required**. Id of the safe                                                   |
 | `evidenceURI` | `string` | **Required**. IPFS URI pointing to the evidence submitted by the claim creator |
-| `signer`      | `string` | **Optional & for test only**. Specific signer account for test purpose         |
 
 <br />
 
@@ -169,7 +169,6 @@ const submitEvidence = async (disputeId, evidenceURI) => {
 | :------------ | :------- | :----------------------------------------------------------------------------- |
 | `disputeId`   | `number` | **Required**. Id of the dispute representing the claim                         |
 | `evidenceURI` | `string` | **Required**. IPFS URI pointing to the evidence submitted by the claim creator |
-| `signer`      | `string` | **Optional & for test only**. Specific signer account for test purpose         |
 
 <br />
 
@@ -219,7 +218,6 @@ const recoverSafeFunds = async (safeId) => {
 | Parameter | Type     | Description                                                            |
 | :-------- | :------- | :--------------------------------------------------------------------- |
 | `safeId`  | `number` | **Required**. Id of the safe                                           |
-| `signer`  | `string` | **Optional & for test only**. Specific signer account for test purpose |
 
 <br />
 
@@ -245,7 +243,6 @@ const setTotalClaimsAllowed = async (claimsAllowed) => {
 | Parameter       | Type     | Description                                                            |
 | :-------------- | :------- | :--------------------------------------------------------------------- |
 | `claimsAllowed` | `number` | **Required**. Number of total claims allowed                           |
-| `signer`        | `string` | **Optional & for test only**. Specific signer account for test purpose |
 
 <br />
 
