@@ -12,25 +12,31 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
 ## Running Tests
 
-Terminal 1
+Compile the TS code
+
+```bash
+  npx tsc
+```
+
+Run the chain on a separate terminal 
 
 ```bash
   npm run chain
 ```
 
-Terminal 2
+Run the tests
 
 ```bash
   npm run test
 ```
 
-## Package Installation
+## Getting started
 
 ```bash
   npm install safient-claims
 ```
 
-## Before Initialization
+## Usage
 
 ```javascript
 // If not injected web3 provider, create a jsonRpcProvider
@@ -79,7 +85,7 @@ sc.safientMain.getTotalClaimsAllowed
 sc.safientMain.getSafientMainContractBalance
 ```
 
-## Usage
+## API details
 
 ### Arbitrator
 

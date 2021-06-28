@@ -7,7 +7,7 @@ const expect = chai.expect;
 chai.use(require('chai-as-promised'));
 
 const { signers, metaevidenceOrEvidenceURI } = require('./constants');
-const { SafientClaims } = require('safient-claims');
+const { SafientClaims } = require('../dist/index');
 
 let provider, chainId;
 
