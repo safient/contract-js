@@ -4,7 +4,7 @@ import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
-import networks from '../networks.json';
+import networks from '../utils/networks.json';
 export class Arbitrator {
   private signer: Signer;
   private arbitratorABI: ContractABI;

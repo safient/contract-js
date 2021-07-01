@@ -1,12 +1,42 @@
+import {
+  Safe,
+  Claim,
+  Tx,
+  ContractAddress,
+  ContractABI,
+  Signer,
+  Connection,
+  SafeData,
+  RecoveryProof,
+} from '../types/Types';
+import { Client, PrivateKey, ThreadID, Where } from '@textile/hub';
+import { getThreadId } from '../utils/threadDb';
 import { safientMainABI } from '../abis/SafientMain';
-import { Safe, Claim, Tx, ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
-import networks from '../networks.json';
+import { Bytes } from 'ethers';
+import networks from '../utils/networks.json';
+
+const safeStages = {
+  ACTIVE: 0,
+  CLAIMING: 1,
+  RECOVERING: 2,
+  RECOVERED: 3,
+  CLAIMED: 4,
+};
+
+const claimStages = {
+  ACTIVE: 0,
+  PASSED: 1,
+  FAILED: 2,
+  REJECTED: 3,
+};
+
 export class SafientMain {
   private signer: Signer;
+  private seed: Uint8Array;
   private safientMainABI: ContractABI;
   private safientMainAddress: ContractAddress;
   private logger: Logger;
@@ -16,9 +46,10 @@ export class SafientMain {
    * @param signer - Signer object
    * @param chainId - Provider chainId
    */
-  constructor(signer: Signer, chainId: number) {
+  constructor(signer: Signer, chainId: number, seed: Uint8Array) {
     this.logger = Logger.globalLogger();
     this.signer = signer;
+    this.seed = seed;
     this.safientMainABI = safientMainABI;
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
@@ -27,6 +58,24 @@ export class SafientMain {
       ? (this.safientMainAddress = network.addresses.safientMain)
       : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
   }
+
+  /**
+   * Get the threadDB connection object
+   * @returns The threadDB connection object with Client and threadId
+   */
+  connectUser = async (): Promise<Connection> => {
+    const identity = PrivateKey.fromRawEd25519Seed(Uint8Array.from(this.seed));
+    const client = await Client.withKeyInfo({
+      key: `${process.env.USER_API_KEY}`,
+      secret: `${process.env.USER_API_SECRET}`,
+    });
+    await client.getToken(identity);
+    const threadId = ThreadID.fromBytes(Uint8Array.from(await getThreadId()));
+    return {
+      client,
+      threadId,
+    };
+  };
 
   /**
    * Get the SafientMain contract instance
@@ -44,14 +93,20 @@ export class SafientMain {
   /**
    * Create a safient safe
    * @param inheritorAddress - Address of the beneficiary who can claim to inherit this safe
+   * @param safeIdOnThreadDB - Safe Id on threadDB
    * @param metaevidenceURI - IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value - Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
    */
-  createSafe = async (inheritorAddress: string, metaevidenceURI: string, value: string): Promise<Tx> => {
+  createSafe = async (
+    inheritorAddress: string,
+    safeIdOnThreadDB: string,
+    metaevidenceURI: string,
+    value: string
+  ): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx: Tx = await contract.createSafe(inheritorAddress, metaevidenceURI, { value });
+      const tx = await contract.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -60,15 +115,53 @@ export class SafientMain {
 
   /**
    * Create a claim on a safe
-   * @param safeId - Id of the safe
+   * @param conn - ThreadDB connection object resolved from connectUser method
+   * @param did - DID of the user
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
    * @returns A transaction response
    */
-  createClaim = async (safeId: number, evidenceURI: string): Promise<Tx> => {
+  createClaim = async (conn: Connection, did: string, safeIdOnThreadDB: string, evidenceURI: string): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.createClaim(safeId, evidenceURI);
-      return tx;
+      const tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
+      const txReceipt = await tx.wait();
+
+      // If transaction is successful, update the safe on threadDB
+      if (txReceipt.status === 1) {
+        console.log('Claim created on contract successfully!');
+        let disputeId = txReceipt.events[2].args[2];
+        disputeId = parseInt(disputeId._hex);
+
+        const query = new Where('_id').eq(safeIdOnThreadDB);
+        const result: SafeData[] = await conn.client.find(conn.threadId, 'Safes', query);
+
+        if (result[0].stage === 0) {
+          console.log('Adding claim to threadDB...');
+          result[0].stage = safeStages.CLAIMING;
+          if (result[0].claims.length < 0) {
+            result[0].claims = [
+              {
+                createdBy: did,
+                claimStatus: claimStages.ACTIVE,
+                disputeID: disputeId,
+              },
+            ];
+          } else {
+            result[0].claims.push({
+              createdBy: did,
+              claimStatus: claimStages.ACTIVE,
+              disputeID: disputeId,
+            });
+          }
+        }
+
+        await conn.client.save(conn.threadId, 'Safes', [result[0]]);
+        console.log('Claim added to threadDB successfully!');
+        return tx;
+      } else {
+        this.logger.throwError('Transaction failed!');
+      }
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -76,14 +169,14 @@ export class SafientMain {
 
   /**
    * Deposit funds in a safe
-   * @param safeId - Id of the safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param value - Funds in Gwei
    * @returns A transaction response
    */
-  depositSafeFunds = async (safeId: number, value: string): Promise<Tx> => {
+  depositSafeFunds = async (safeIdOnThreadDB: string, value: string): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.depositSafeFunds(safeId, { value });
+      const tx = await contract.depositSafeFunds(safeIdOnThreadDB, { value });
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -92,13 +185,13 @@ export class SafientMain {
 
   /**
    * Recover funds from a safe - only safe's current owner can execute this
-   * @param safeId - Id of the safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeId: number): Promise<Tx> => {
+  recoverSafeFunds = async (safeIdOnThreadDB: string): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.recoverSafeFunds(safeId);
+      const tx = await contract.recoverSafeFunds(safeIdOnThreadDB);
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -137,33 +230,6 @@ export class SafientMain {
   };
 
   /**
-   * Get all the safes created on the SafientMain contract
-   * @returns The array of all the safes
-   */
-  getAllSafes = async (): Promise<Safe[]> => {
-    try {
-      let safes: Safe[] = [];
-      const contract = await this.getContractInstance();
-      const safesCountArray: 0[] = Array(Number(await contract.safesCount())).fill(0);
-      return new Promise((resolve, reject) => {
-        safesCountArray.forEach(async (_, i) => {
-          try {
-            const safe: Safe = await contract.safes(i + 1);
-            safes.push(safe);
-            if (i === safesCountArray.length - 1) {
-              resolve(safes);
-            }
-          } catch (e) {
-            reject(e.message);
-          }
-        });
-      });
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
    * Get all the claims created on the SafientMain contract
    * @returns The array of all the claims
    */
@@ -192,19 +258,14 @@ export class SafientMain {
 
   /**
    * Get the safe by safe's id
-   * @param safeId - Id of the safe
-   * @returns The safe's object containing safe data
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns The Safe object containing safe data
    */
-  getSafeBySafeId = async (safeId: number): Promise<Safe> => {
+  getSafeBySafeId = async (safeIdOnThreadDB: string): Promise<Safe> => {
     try {
       const contract = await this.getContractInstance();
-      const safesCount: BigNumber = await contract.safesCount();
-      if (safeId === 0 || safeId > Number(safesCount)) {
-        this.logger.throwArgumentError('Safe Id does not exist', 'safeId', safeId);
-      } else {
-        const safe: Safe = await contract.safes(safeId);
-        return safe;
-      }
+      const safe: Safe = await contract.safes(safeIdOnThreadDB);
+      return safe;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -213,7 +274,7 @@ export class SafientMain {
   /**
    * Get the claim by claim's id
    * @param claimId - Id of the claim
-   * @returns The claim's object containing claim data
+   * @returns The Claim object containing claim data
    */
   getClaimByClaimId = async (claimId: number): Promise<Claim> => {
     try {
@@ -232,20 +293,14 @@ export class SafientMain {
 
   /**
    * Get all the claims made on a safe by safe's id
-   * @param safeId - Id of the safe
-   * @returns The array of all the claim objects containing claim data on that safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns The array of all the Claim objects containing claim data on that safe
    */
-  getClaimsOnSafeBySafeId = async (safeId: number): Promise<Claim[]> => {
+  getClaimsOnSafeBySafeId = async (safeIdOnThreadDB: string): Promise<Claim[]> => {
     try {
-      const contract = await this.getContractInstance();
-      const safesCount: BigNumber = await contract.safesCount();
-      if (safeId > Number(safesCount)) {
-        this.logger.throwArgumentError('Safe Id does not exist', 'safeId', safeId);
-      } else {
-        const claims = await this.getAllClaims();
-        const claimsOnSafeId = claims.filter((claim) => Number(claim.safeId) === safeId);
-        return claimsOnSafeId;
-      }
+      const claims = await this.getAllClaims();
+      const claimsOnSafeId = claims.filter((claim) => claim.safeId === safeIdOnThreadDB);
+      return claimsOnSafeId;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -286,7 +341,7 @@ export class SafientMain {
   getSafientMainContractBalance = async (): Promise<number> => {
     try {
       const contract = await this.getContractInstance();
-      const mainContractBalance: BigNumber = await contract.getSafexMainContractBalance();
+      const mainContractBalance: BigNumber = await contract.getSafientMainContractBalance();
       return Number(formatEther(mainContractBalance));
     } catch (e) {
       this.logger.throwError(e.message);
@@ -340,6 +395,37 @@ export class SafientMain {
         }
         return status;
       }
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * Gaurdian proof
+   * @param message - message
+   * @param signature - signature
+   * @param guardianProof - guardianProof
+   * @param secrets - secrets
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns
+   */
+  gaurdianProof = async (
+    message: string,
+    signature: Bytes,
+    guardianProof: RecoveryProof[],
+    secrets: string[],
+    safeIdOnThreadDB: string
+  ): Promise<boolean> => {
+    try {
+      const contract = await this.getContractInstance();
+      const result: boolean = await contract.guardianProof(
+        message,
+        signature,
+        guardianProof,
+        secrets,
+        safeIdOnThreadDB
+      );
+      return result;
     } catch (e) {
       this.logger.throwError(e.message);
     }

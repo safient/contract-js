@@ -21,9 +21,9 @@ export const safientMainABI = [
       },
       {
         indexed: true,
-        internalType: 'uint256',
+        internalType: 'string',
         name: 'safeId',
-        type: 'uint256',
+        type: 'string',
       },
       {
         indexed: true,
@@ -190,9 +190,9 @@ export const safientMainABI = [
     name: 'claims',
     outputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: 'safeId',
-        type: 'uint256',
+        type: 'string',
       },
       {
         internalType: 'uint256',
@@ -215,7 +215,7 @@ export const safientMainABI = [
         type: 'uint256',
       },
       {
-        internalType: 'enum SafexMain.ClaimStatus',
+        internalType: 'enum SafientMain.ClaimStatus',
         name: 'status',
         type: 'uint8',
       },
@@ -244,9 +244,9 @@ export const safientMainABI = [
   {
     inputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: '_safeId',
-        type: 'uint256',
+        type: 'string',
       },
       {
         internalType: 'string',
@@ -268,6 +268,11 @@ export const safientMainABI = [
       },
       {
         internalType: 'string',
+        name: '_safeId',
+        type: 'string',
+      },
+      {
+        internalType: 'string',
         name: '_metaEvidence',
         type: 'string',
       },
@@ -280,9 +285,9 @@ export const safientMainABI = [
   {
     inputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: '_safeId',
-        type: 'uint256',
+        type: 'string',
       },
     ],
     name: 'depositSafeFunds',
@@ -304,8 +309,65 @@ export const safientMainABI = [
     type: 'function',
   },
   {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: '_messageHash',
+        type: 'bytes32',
+      },
+    ],
+    name: 'getEthSignedMessageHash',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
+        name: '_message',
+        type: 'string',
+      },
+    ],
+    name: 'getMessageHash',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: '_claimId',
+        type: 'uint256',
+      },
+    ],
+    name: 'getSafeStage',
+    outputs: [
+      {
+        internalType: 'enum SafientMain.ClaimStatus',
+        name: '',
+        type: 'uint8',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [],
-    name: 'getSafexMainContractBalance',
+    name: 'getSafientMainContractBalance',
     outputs: [
       {
         internalType: 'uint256',
@@ -330,6 +392,57 @@ export const safientMainABI = [
     type: 'function',
   },
   {
+    inputs: [
+      {
+        internalType: 'string',
+        name: '_message',
+        type: 'string',
+      },
+      {
+        internalType: 'bytes',
+        name: '_signature',
+        type: 'bytes',
+      },
+      {
+        components: [
+          {
+            internalType: 'bytes32',
+            name: 'secretHash',
+            type: 'bytes32',
+          },
+          {
+            internalType: 'address',
+            name: 'guardianAddress',
+            type: 'address',
+          },
+        ],
+        internalType: 'struct SafientMain.RecoveryProof[]',
+        name: '_guardianproof',
+        type: 'tuple[]',
+      },
+      {
+        internalType: 'string[]',
+        name: '_secrets',
+        type: 'string[]',
+      },
+      {
+        internalType: 'string',
+        name: '_safeId',
+        type: 'string',
+      },
+    ],
+    name: 'guardianProof',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'metaEvidenceID',
     outputs: [
@@ -345,9 +458,9 @@ export const safientMainABI = [
   {
     inputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: '_safeId',
-        type: 'uint256',
+        type: 'string',
       },
     ],
     name: 'recoverSafeFunds',
@@ -376,17 +489,17 @@ export const safientMainABI = [
   {
     inputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: '',
-        type: 'uint256',
+        type: 'string',
       },
     ],
     name: 'safes',
     outputs: [
       {
-        internalType: 'uint256',
+        internalType: 'string',
         name: 'safeId',
-        type: 'uint256',
+        type: 'string',
       },
       {
         internalType: 'address',

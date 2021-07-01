@@ -63,7 +63,11 @@ library CappedMath {
  *  -Allow giving rulings. For this a function must call arbitrable.rule(disputeID, ruling).
  */
 contract Arbitrator {
-    enum DisputeStatus {Waiting, Appealable, Solved}
+    enum DisputeStatus {
+        Waiting,
+        Appealable,
+        Solved
+    }
 
     modifier requireArbitrationFee(bytes _extraData) {
         require(

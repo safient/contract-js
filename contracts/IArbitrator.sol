@@ -20,7 +20,11 @@ import "./IArbitrable.sol";
  * - Allow giving rulings. For this a function must call arbitrable.rule(disputeID, ruling).
  */
 interface IArbitrator {
-    enum DisputeStatus {Waiting, Appealable, Solved}
+    enum DisputeStatus {
+        Waiting,
+        Appealable,
+        Solved
+    }
 
     /**
      * @dev To be emitted when a dispute is created.
