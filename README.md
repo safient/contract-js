@@ -23,7 +23,7 @@ Terminal 1
   npm run chain
 ```
 
-Terminal 2
+Run the tests
 
 ```bash
   npm run deploy
@@ -35,13 +35,13 @@ Terminal 3
   npm run test
 ```
 
-## Package Installation
+## Getting started
 
 ```bash
   npm i @safient/claims
 ```
 
-## Before Initialization
+## Usage
 
 ```javascript
 // If not injected web3 provider, create a jsonRpcProvider
@@ -91,7 +91,7 @@ sc.safientMain.getSafientMainContractBalance
 sc.safientMain.gaurdianProof
 ```
 
-## Usage
+## API details
 
 ### Arbitrator
 

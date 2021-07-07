@@ -9,7 +9,12 @@
     "compile": "hardhat compile",
     "chain": "hardhat node",
     "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.js"
+    "deploy": "hardhat run scripts/deploy.js",
+    "build": "tsc -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/safient/safient-claims-js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,6 +23,9 @@
   "devDependencies": {
     "@types/node": "^15.6.1",
     "typescript": "^4.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@ethersproject/address": "^5.2.0",
