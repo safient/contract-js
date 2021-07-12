@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7;
-
+pragma experimental ABIEncoderV2;
 import "./IArbitrable.sol";
 import "./IArbitrator.sol";
 import "./IEvidence.sol";
@@ -10,11 +10,16 @@ contract SafientMain is IArbitrable, IEvidence {
     uint256 private constant RULING_OPTIONS = 2;
 
     /* Enums */
-    enum ClaimStatus {Active, Passed, Failed, Refused}
+    enum ClaimStatus {
+        Active,
+        Passed,
+        Failed,
+        Refused
+    }
 
     /* Structs */
     struct Safe {
-        uint256 safeId;
+        string safeId;
         address safeCreatedBy;
         address safeCurrentOwner;
         address safeInheritor;
@@ -24,13 +29,18 @@ contract SafientMain is IArbitrable, IEvidence {
     }
 
     struct Claim {
-        uint256 safeId;
+        string safeId;
         uint256 disputeId;
         address claimedBy;
         uint256 metaEvidenceId;
         uint256 evidenceGroupId;
         ClaimStatus status;
         string result;
+    }
+
+    struct RecoveryProof {
+        bytes32 secretHash;
+        address guardianAddress;
     }
 
     /* Storage - Public */
@@ -43,8 +53,8 @@ contract SafientMain is IArbitrable, IEvidence {
     uint256 public metaEvidenceID = 0;
     uint256 public evidenceGroupID = 0;
 
-    mapping(uint256 => Safe) public safes; // safes[safeId] => safe, starts from 1
-    mapping(uint256 => Claim) public claims; // claims[disputeId] => claim, starts from 0 (because, disputeId starts from 0)
+    mapping(string => Safe) public safes; // safes[safeId] => Safe
+    mapping(uint256 => Claim) public claims; // claims[disputeId] => Claim, starts from 0 (because, disputeId starts from 0)
 
     /* Storage - Private */
     uint256 private _totalClaimsAllowed = 2;
@@ -66,11 +76,6 @@ contract SafientMain is IArbitrable, IEvidence {
         _;
     }
 
-    modifier safeShouldExist(uint256 _safeId) {
-        require(_safeId <= safesCount, "Safe does not exist");
-        _;
-    }
-
     modifier shouldBeValidRuling(uint256 _ruling) {
         require(_ruling <= RULING_OPTIONS, "Ruling out of bounds!");
         _;
@@ -78,8 +83,13 @@ contract SafientMain is IArbitrable, IEvidence {
 
     modifier safeCreationRequisite(
         address _inheritor,
+        string memory _safeId,
         string calldata _metaEvidence
     ) {
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
         require(
             msg.value >= arbitrator.arbitrationCost(""),
             "Inadequate fee payment"
@@ -100,9 +110,14 @@ contract SafientMain is IArbitrable, IEvidence {
     }
 
     modifier claimCreationRequisite(
-        uint256 _safeId,
+        string memory _safeId,
         string calldata _evidence
     ) {
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+
         Safe memory safe = safes[_safeId];
 
         require(
@@ -120,7 +135,7 @@ contract SafientMain is IArbitrable, IEvidence {
         _;
     }
 
-    modifier recoverSafeFundsRequisite(uint256 _safeId) {
+    modifier recoverSafeFundsRequisite(string memory _safeId) {
         Safe memory safe = safes[_safeId];
 
         require(
@@ -155,7 +170,7 @@ contract SafientMain is IArbitrable, IEvidence {
 
     event CreateClaim(
         address indexed claimCreatedBy,
-        uint256 indexed safeId,
+        string indexed safeId,
         uint256 indexed disputeId
     );
 
@@ -168,17 +183,20 @@ contract SafientMain is IArbitrable, IEvidence {
     /* Functions - External */
     receive() external payable {}
 
-    function createSafe(address _inheritor, string calldata _metaEvidence)
+    function createSafe(
+        address _inheritor,
+        string memory _safeId,
+        string calldata _metaEvidence
+    )
         external
         payable
-        safeCreationRequisite(_inheritor, _metaEvidence)
+        safeCreationRequisite(_inheritor, _safeId, _metaEvidence)
     {
-        safesCount += 1;
         metaEvidenceID += 1;
 
-        Safe memory safe = safes[safesCount];
+        Safe memory safe = safes[_safeId];
         safe = Safe({
-            safeId: safesCount,
+            safeId: _safeId,
             safeCreatedBy: msg.sender,
             safeCurrentOwner: msg.sender,
             safeInheritor: _inheritor,
@@ -186,29 +204,29 @@ contract SafientMain is IArbitrable, IEvidence {
             claimsCount: 0,
             safeFunds: msg.value
         });
-        safes[safesCount] = safe;
+        safes[_safeId] = safe;
 
-        (bool sent, bytes memory data) =
-            address(this).call{value: msg.value}("");
+        (bool sent, bytes memory data) = address(this).call{value: msg.value}(
+            ""
+        );
         require(sent, "Failed to send Ether");
+
+        safesCount += 1;
 
         emit MetaEvidence(metaEvidenceID, _metaEvidence);
         emit CreateSafe(msg.sender, _inheritor, metaEvidenceID);
     }
 
-    function createClaim(uint256 _safeId, string calldata _evidence)
+    function createClaim(string memory _safeId, string calldata _evidence)
         external
         payable
-        safeShouldExist(_safeId)
         claimCreationRequisite(_safeId, _evidence)
     {
         Safe memory safe = safes[_safeId];
 
-        uint256 disputeID =
-            arbitrator.createDispute{value: arbitrator.arbitrationCost("")}(
-                RULING_OPTIONS,
-                ""
-            );
+        uint256 disputeID = arbitrator.createDispute{
+            value: arbitrator.arbitrationCost("")
+        }(RULING_OPTIONS, "");
 
         evidenceGroupID += 1;
 
@@ -268,23 +286,19 @@ contract SafientMain is IArbitrable, IEvidence {
         emit Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 
-    function depositSafeFunds(uint256 _safeId)
-        external
-        payable
-        safeShouldExist(_safeId)
-    {
+    function depositSafeFunds(string memory _safeId) external payable {
         Safe memory safe = safes[_safeId];
         safe.safeFunds += msg.value;
         safes[_safeId] = safe;
 
-        (bool sent, bytes memory data) =
-            address(this).call{value: msg.value}("");
+        (bool sent, bytes memory data) = address(this).call{value: msg.value}(
+            ""
+        );
         require(sent, "Failed to send Ether");
     }
 
-    function recoverSafeFunds(uint256 _safeId)
+    function recoverSafeFunds(string memory _safeId)
         external
-        safeShouldExist(_safeId)
         recoverSafeFundsRequisite(_safeId)
     {
         Safe memory safe = safes[_safeId];
@@ -310,6 +324,94 @@ contract SafientMain is IArbitrable, IEvidence {
         emit Evidence(arbitrator, claim.evidenceGroupId, msg.sender, _evidence);
     }
 
+    function getMessageHash(string memory _message)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(_message));
+    }
+
+    function getEthSignedMessageHash(bytes32 _messageHash)
+        public
+        pure
+        returns (bytes32)
+    {
+        /*
+        Signature is produced by signing a keccak256 hash with the following format:
+        "\x19Ethereum Signed Message\n" + len(msg) + msg
+        */
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n32",
+                    _messageHash
+                )
+            );
+    }
+
+    function guardianProof(
+        string memory _message,
+        bytes memory _signature,
+        RecoveryProof[] memory _guardianproof,
+        string[] memory _secrets,
+        string memory _safeId
+    ) public payable returns (bool) {
+        Safe memory safe = safes[_safeId];
+        uint256 noOfGuardians = _secrets.length;
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        if (_signature.length != 65) {
+            return false;
+        }
+        assembly {
+            r := mload(add(_signature, 32))
+            s := mload(add(_signature, 64))
+            v := byte(0, mload(add(_signature, 96)))
+        }
+        if (v < 27) {
+            v += 27;
+        }
+        if (v != 27 && v != 28) {
+            return false;
+        } else {
+            bytes32 _messagehash = getMessageHash(_message);
+            bytes32 _hash = getEthSignedMessageHash(_messagehash);
+            address creator = ecrecover(_hash, v, r, s);
+            if (creator == safe.safeCreatedBy && safe.safeFunds != 0) {
+                uint256 guardianValue = safe.safeFunds / noOfGuardians;
+
+                for (
+                    uint8 guardianIndex = 0;
+                    guardianIndex < _guardianproof.length;
+                    guardianIndex++
+                ) {
+                    //Check if the hashes match
+                    for (
+                        uint8 secretIndex = 0;
+                        secretIndex < noOfGuardians;
+                        secretIndex++
+                    ) {
+                        if (
+                            _guardianproof[guardianIndex].secretHash ==
+                            keccak256(abi.encodePacked(_secrets[secretIndex]))
+                        ) {
+                            safe.safeFunds -= guardianValue;
+                            _guardianproof[guardianIndex].guardianAddress.call{
+                                value: guardianValue
+                            }("");
+                        }
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
     /* Setters */
     function setTotalClaimsAllowed(uint256 _claimsAllowed)
         public
@@ -319,7 +421,7 @@ contract SafientMain is IArbitrable, IEvidence {
     }
 
     /* Getters */
-    function getSafexMainContractBalance()
+    function getSafientMainContractBalance()
         public
         view
         returns (uint256 balance)
@@ -333,5 +435,9 @@ contract SafientMain is IArbitrable, IEvidence {
         returns (uint256 totalClaimsAllowed)
     {
         return _totalClaimsAllowed;
+    }
+
+    function getSafeStage(uint256 _claimId) public view returns (ClaimStatus) {
+        return claims[_claimId].status;
     }
 }

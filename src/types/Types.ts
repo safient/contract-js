@@ -1,9 +1,9 @@
-import { JsonRpcProvider, Web3Provider, JsonRpcSigner, TransactionResponse } from '@ethersproject/providers';
+import { JsonRpcSigner, TransactionResponse } from '@ethersproject/providers';
 import { ContractInterface } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 
 export type Safe = {
-  safeId: BigNumber;
+  safeId: string;
   safeCreatedBy: string;
   safeCurrentOwner: string;
   safeInheritor: string;
@@ -13,7 +13,7 @@ export type Safe = {
 };
 
 export type Claim = {
-  safeId: BigNumber;
+  safeId: string;
   disputeId: BigNumber;
   claimedBy: string;
   metaEvidenceId: BigNumber;
@@ -23,7 +23,11 @@ export type Claim = {
 };
 
 export type Tx = TransactionResponse;
-export type Provider = JsonRpcProvider | Web3Provider;
 export type ContractAddress = string;
 export type ContractABI = ContractInterface | object[];
 export type Signer = JsonRpcSigner;
+
+export type RecoveryProof = {
+  secretHash: string;
+  guardianAddress: string;
+};

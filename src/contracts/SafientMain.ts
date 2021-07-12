@@ -1,31 +1,29 @@
+import { Safe, Claim, Tx, ContractAddress, ContractABI, Signer, RecoveryProof } from '../types/Types';
 import { safientMainABI } from '../abis/SafientMain';
-import { networks } from '../networks/networks';
-import { Safe, Claim, Tx, Provider, ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
+import { Bytes } from 'ethers';
+import networks from '../utils/networks.json';
 
 export class SafientMain {
-  private provider: Provider;
+  private signer: Signer;
   private safientMainABI: ContractABI;
   private safientMainAddress: ContractAddress;
-  private providerType: string;
   private logger: Logger;
 
   /**
    * Arbitrator Constructor
-   * @param provider - Provider object ex: injected web3 provider like metamask
+   * @param signer - Signer object
    * @param chainId - Provider chainId
    */
-  constructor(provider: Provider, chainId: number) {
+  constructor(signer: Signer, chainId: number) {
     this.logger = Logger.globalLogger();
-    this.provider = provider;
+    this.signer = signer;
     this.safientMainABI = safientMainABI;
 
-    chainId === 31337 ? (this.providerType = 'testRpc') : (this.providerType = 'injectedWeb3');
-
-    const network = networks.find((network) => chainId === network.chainId);
+    const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.safientMain !== ''
       ? (this.safientMainAddress = network.addresses.safientMain)
@@ -33,33 +31,12 @@ export class SafientMain {
   }
 
   /**
-   * Get the signer object from a provider
-   * @param provider - Provider object like JsonRpcProvider or Web3Provider
-   * @param [signer] - Specific signer account for test purpose
-   * @returns The signer object
-   */
-  private getSignerFromProvider = async (provider: Provider, signer?: number): Promise<Signer> => {
-    try {
-      let signer_;
-      signer !== undefined ? (signer_ = await provider.getSigner(signer)) : (signer_ = await provider.getSigner());
-      return signer_;
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
    * Get the SafientMain contract instance
-   * @param [signer] - Specific signer account for test purpose
    * @returns The SafientMain contract instance associated with the signer
    */
-  private getContractInstance = async (signer?: number): Promise<Contract> => {
+  private getContractInstance = async (): Promise<Contract> => {
     try {
-      let signer_;
-      signer !== undefined
-        ? (signer_ = await this.getSignerFromProvider(this.provider, signer))
-        : (signer_ = await this.getSignerFromProvider(this.provider));
-      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, signer_);
+      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, this.signer);
       return contractInstance;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -69,14 +46,20 @@ export class SafientMain {
   /**
    * Create a safient safe
    * @param inheritorAddress - Address of the beneficiary who can claim to inherit this safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param metaevidenceURI - IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value - Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
    */
-  createSafe = async (inheritorAddress: string, metaevidenceURI: string, value: string): Promise<Tx> => {
+  createSafe = async (
+    inheritorAddress: string,
+    safeIdOnThreadDB: string,
+    metaevidenceURI: string,
+    value: string
+  ): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx: Tx = await contract.createSafe(inheritorAddress, metaevidenceURI, { value });
+      const tx = await contract.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -85,18 +68,14 @@ export class SafientMain {
 
   /**
    * Create a claim on a safe
-   * @param safeId - Id of the safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  createClaim = async (safeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
+  createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
-      const tx = await contract.createClaim(safeId, evidenceURI);
+      const contract = await this.getContractInstance();
+      const tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -105,14 +84,14 @@ export class SafientMain {
 
   /**
    * Deposit funds in a safe
-   * @param safeId - Id of the safe
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param value - Funds in Gwei
    * @returns A transaction response
    */
-  depositSafeFunds = async (safeId: number, value: string): Promise<Tx> => {
+  depositSafeFunds = async (safeIdOnThreadDB: string, value: string): Promise<Tx> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.depositSafeFunds(safeId, { value });
+      const tx = await contract.depositSafeFunds(safeIdOnThreadDB, { value });
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -121,17 +100,13 @@ export class SafientMain {
 
   /**
    * Recover funds from a safe - only safe's current owner can execute this
-   * @param safeId - Id of the safe
-   * @param [signer] - Specific signer account for test purpose only
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeId: number, signer?: number): Promise<Tx> => {
+  recoverSafeFunds = async (safeIdOnThreadDB: string): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
-      const tx = await contract.recoverSafeFunds(safeId);
+      const contract = await this.getContractInstance();
+      const tx = await contract.recoverSafeFunds(safeIdOnThreadDB);
       return tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -142,15 +117,11 @@ export class SafientMain {
    * Submit the evidence supporting the claim - only claim creator can execute this
    * @param disputeId - Id of the dispute representing the claim
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  submitEvidence = async (disputeId: number, evidenceURI: string, signer?: number): Promise<Tx> => {
+  submitEvidence = async (disputeId: number, evidenceURI: string): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.submitEvidence(disputeId, evidenceURI);
       return tx;
     } catch (e) {
@@ -161,44 +132,13 @@ export class SafientMain {
   /**
    * Set a new value for the total claims allowed on a safe, only SafientMain contract deployer can execute this
    * @param claimsAllowed - Number of total claims allowed
-   * @param [signer] - Specific signer account for test purpose only
    * @returns A transaction response
    */
-  setTotalClaimsAllowed = async (claimsAllowed: number, signer?: number): Promise<Tx> => {
+  setTotalClaimsAllowed = async (claimsAllowed: number): Promise<Tx> => {
     try {
-      let contract;
-      this.providerType === 'testRpc'
-        ? (contract = await this.getContractInstance(signer))
-        : (contract = await this.getContractInstance());
+      const contract = await this.getContractInstance();
       const tx = await contract.setTotalClaimsAllowed(claimsAllowed);
       return tx;
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
-   * Get all the safes created on the SafientMain contract
-   * @returns The array of all the safes
-   */
-  getAllSafes = async (): Promise<Safe[]> => {
-    try {
-      let safes: Safe[] = [];
-      const contract = await this.getContractInstance();
-      const safesCountArray: 0[] = Array(Number(await contract.safesCount())).fill(0);
-      return new Promise((resolve, reject) => {
-        safesCountArray.forEach(async (_, i) => {
-          try {
-            const safe: Safe = await contract.safes(i + 1);
-            safes.push(safe);
-            if (i === safesCountArray.length - 1) {
-              resolve(safes);
-            }
-          } catch (e) {
-            reject(e.message);
-          }
-        });
-      });
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -232,29 +172,24 @@ export class SafientMain {
   };
 
   /**
-   * Get the safe by safe's id
-   * @param safeId - Id of the safe
-   * @returns The safe's object containing safe data
+   * Get the safe by safe id
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns The Safe object containing safe data
    */
-  getSafeBySafeId = async (safeId: number): Promise<Safe> => {
+  getSafeBySafeId = async (safeIdOnThreadDB: string): Promise<Safe> => {
     try {
       const contract = await this.getContractInstance();
-      const safesCount: BigNumber = await contract.safesCount();
-      if (safeId === 0 || safeId > Number(safesCount)) {
-        this.logger.throwArgumentError('Safe Id does not exist', 'safeId', safeId);
-      } else {
-        const safe: Safe = await contract.safes(safeId);
-        return safe;
-      }
+      const safe: Safe = await contract.safes(safeIdOnThreadDB);
+      return safe;
     } catch (e) {
       this.logger.throwError(e.message);
     }
   };
 
   /**
-   * Get the claim by claim's id
+   * Get the claim by claim id
    * @param claimId - Id of the claim
-   * @returns The claim's object containing claim data
+   * @returns The Claim object containing claim data
    */
   getClaimByClaimId = async (claimId: number): Promise<Claim> => {
     try {
@@ -272,21 +207,15 @@ export class SafientMain {
   };
 
   /**
-   * Get all the claims made on a safe by safe's id
-   * @param safeId - Id of the safe
-   * @returns The array of all the claim objects containing claim data on that safe
+   * Get all the claims made on a safe by safe id
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns The array of all the Claim objects containing claim data on that safe
    */
-  getClaimsOnSafeBySafeId = async (safeId: number): Promise<Claim[]> => {
+  getClaimsOnSafeBySafeId = async (safeIdOnThreadDB: string): Promise<Claim[]> => {
     try {
-      const contract = await this.getContractInstance();
-      const safesCount: BigNumber = await contract.safesCount();
-      if (safeId > Number(safesCount)) {
-        this.logger.throwArgumentError('Safe Id does not exist', 'safeId', safeId);
-      } else {
-        const claims = await this.getAllClaims();
-        const claimsOnSafeId = claims.filter((claim) => Number(claim.safeId) === safeId);
-        return claimsOnSafeId;
-      }
+      const claims = await this.getAllClaims();
+      const claimsOnSafeId = claims.filter((claim) => claim.safeId === safeIdOnThreadDB);
+      return claimsOnSafeId;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -327,7 +256,7 @@ export class SafientMain {
   getSafientMainContractBalance = async (): Promise<number> => {
     try {
       const contract = await this.getContractInstance();
-      const mainContractBalance: BigNumber = await contract.getSafexMainContractBalance();
+      const mainContractBalance: BigNumber = await contract.getSafientMainContractBalance();
       return Number(formatEther(mainContractBalance));
     } catch (e) {
       this.logger.throwError(e.message);
@@ -349,7 +278,7 @@ export class SafientMain {
   };
 
   /**
-   * Get the status (Active, Passed, Failed or Refused To Arbitrate) of a claim by claim's id
+   * Get the status (Active, Passed, Failed or Refused To Arbitrate) of a claim by claim id
    * @param claimId - Id of the claim
    * @returns The status of the claim
    */
@@ -381,6 +310,37 @@ export class SafientMain {
         }
         return status;
       }
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * Gaurdian proof
+   * @param message - message
+   * @param signature - signature
+   * @param guardianProof - guardian proof
+   * @param secrets - secrets
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @returns
+   */
+  gaurdianProof = async (
+    message: string,
+    signature: Bytes,
+    guardianProof: RecoveryProof[],
+    secrets: string[],
+    safeIdOnThreadDB: string
+  ): Promise<boolean> => {
+    try {
+      const contract = await this.getContractInstance();
+      const result: boolean = await contract.guardianProof(
+        message,
+        signature,
+        guardianProof,
+        secrets,
+        safeIdOnThreadDB
+      );
+      return result;
     } catch (e) {
       this.logger.throwError(e.message);
     }
