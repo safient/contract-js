@@ -1,5 +1,7 @@
 const { ethers } = require('hardhat');
 const { JsonRpcProvider } = require('@ethersproject/providers');
+const { Contract } = require('@ethersproject/contracts');
+const { arbitratorABI } = require('./abis/arbitratorABI');
 const chai = require('chai');
 
 require('dotenv').config();
@@ -16,6 +18,7 @@ describe('safientMain', async () => {
   const safeIdOnThreadDB = '123456789';
   let provider, chainId;
   let safientMainAdminSigner, safeCreatorSigner, inheritorSigner, accountXSigner, safeCreatorAddress, inheritorAddress;
+  let arbitratorAddress;
 
   describe('SafientClaims SDK Flow', async () => {
     before(async () => {
@@ -36,11 +39,11 @@ describe('safientMain', async () => {
 
     it('Should deploy SafientMain', async () => {
       const AutoAppealableArbitrator = await ethers.getContractFactory('AutoAppealableArbitrator');
-      const arbitrator = await AutoAppealableArbitrator.deploy(ethers.utils.parseEther('0.001'));
+      let arbitrator = await AutoAppealableArbitrator.deploy(ethers.utils.parseEther('0.001'));
       await arbitrator.deployed();
 
       const SafientMain = await ethers.getContractFactory('SafientMain');
-      const safientMain = await SafientMain.deploy(arbitrator.address);
+      let safientMain = await SafientMain.deploy(arbitrator.address);
       await safientMain.deployed();
 
       arbitratorAddress = arbitrator.address;
@@ -143,6 +146,15 @@ describe('safientMain', async () => {
       expect(claim.claimedBy).to.equal(inheritorAddress);
       expect(claim.result).to.equal('Active');
     });
+
+    // it('Arbitrator should be able to give ruling', async () => {
+    //   const sc = new SafientClaims(accountXSigner, chainId);
+
+    //   const arbitratorContract = new Contract(arbitratorAddress, arbitratorABI, safientMainAdminSigner);
+    //   await arbitratorContract.giveRuling(0, 2);
+
+    //   expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
+    // });
 
     it('Should allow users to deposit funds in a safe', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
@@ -249,6 +261,7 @@ describe('safientMain', async () => {
 
     it('Should get the status of the claim on a safe', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
+      // expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
       expect(await sc.safientMain.getClaimStatus(0)).to.equal('Active');
     });
   });

@@ -39,7 +39,7 @@
   "dependencies": {
     "@ethersproject/address": "^5.2.0",
     "@ethersproject/bignumber": "^5.2.0",
-    "@ethersproject/contracts": "^5.2.0",
+    "@ethersproject/contracts": "^5.0.5",
     "@ethersproject/logger": "^5.2.0",
     "@ethersproject/providers": "^5.2.0",
     "@ethersproject/units": "^5.2.0",
