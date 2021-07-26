@@ -1,12 +1,13 @@
 import { Safe, Claim, Tx, ContractAddress, ContractABI, Signer, RecoveryProof } from '../types/Types';
-import { safientMainABI } from '../abis/SafientMain';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
 import networks from '../utils/networks.json';
-
+import {artifacts} from 'hardhat'
+import { Artifact } from 'hardhat/types';
+import data from '../artifacts/SafientMain.json'
 export class SafientMain {
   private signer: Signer;
   private safientMainABI: ContractABI;
@@ -21,12 +22,12 @@ export class SafientMain {
   constructor(signer: Signer, chainId: number) {
     this.logger = Logger.globalLogger();
     this.signer = signer;
-    this.safientMainABI = safientMainABI;
+    this.safientMainABI = data.abi 
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.safientMain !== ''
-      ? (this.safientMainAddress = network.addresses.safientMain)
+      ? (this.safientMainAddress = data.address)
       : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
   }
 
@@ -66,6 +67,21 @@ export class SafientMain {
     }
   };
 
+  syncSafe = async (
+    creatorAddress: string,
+    safeIdOnThreadDB: string,
+    metaevidenceURI: string,
+    value: string
+  ): Promise<Tx> => {
+    try {
+      const contract = await this.getContractInstance();
+      const tx = await contract.syncSafe(creatorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
+      return tx;
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
+
   /**
    * Create a claim on a safe
    * @param safeIdOnThreadDB - Id of the safe on threadDB
@@ -74,7 +90,7 @@ export class SafientMain {
    */
   createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<Tx> => {
     try {
-      const contract = await this.getContractInstance();
+      const contract: Contract = await this.getContractInstance();
       const tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
       return tx;
     } catch (e) {

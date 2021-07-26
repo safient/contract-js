@@ -109,6 +109,34 @@ contract SafientMain is IArbitrable, IEvidence {
         _;
     }
 
+    modifier syncSafeRequisite(
+        address _creator,
+        string memory _safeId,
+        string calldata _metaEvidence
+    ) {
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+        require(
+            msg.value >= arbitrator.arbitrationCost(""),
+            "Inadequate fee payment"
+        );
+        require(
+            bytes(_metaEvidence).length > 0,
+            "Should provide metaEvidence to create a safe"
+        );
+        require(
+            _creator != address(0),
+            "Should provide an creator for the safe"
+        );
+        require(
+            msg.sender != _creator,
+            "Safe should be synced by the inheritor of the safe"
+        );
+        _;
+    }
+
     modifier claimCreationRequisite(
         string memory _safeId,
         string calldata _evidence
@@ -215,6 +243,36 @@ contract SafientMain is IArbitrable, IEvidence {
 
         emit MetaEvidence(metaEvidenceID, _metaEvidence);
         emit CreateSafe(msg.sender, _inheritor, metaEvidenceID);
+    }
+
+    function syncSafe(
+        address _creator,
+        string memory _safeId,
+        string calldata _metaEvidence
+    ) external payable syncSafeRequisite(_creator, _safeId, _metaEvidence) {
+        metaEvidenceID += 1;
+
+        Safe memory safe = safes[_safeId];
+        safe = Safe({
+            safeId: _safeId,
+            safeCreatedBy: _creator,
+            safeCurrentOwner: _creator,
+            safeInheritor: msg.sender,
+            metaEvidenceId: metaEvidenceID,
+            claimsCount: 0,
+            safeFunds: msg.value
+        });
+        safes[_safeId] = safe;
+
+        (bool sent, bytes memory data) = address(this).call{value: msg.value}(
+            ""
+        );
+        require(sent, "Failed to send Ether");
+
+        safesCount += 1;
+
+        emit MetaEvidence(metaEvidenceID, _metaEvidence);
+        emit CreateSafe(_creator, msg.sender, metaEvidenceID);
     }
 
     function createClaim(string memory _safeId, string calldata _evidence)

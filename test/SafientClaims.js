@@ -126,6 +126,8 @@ describe('safientMain', async () => {
       ).to.be.rejectedWith(Error);
     });
 
+    
+
     it('Should allow users to create a claim', async () => {
       let sc;
       sc = new SafientClaims(accountXSigner, chainId);
@@ -264,5 +266,37 @@ describe('safientMain', async () => {
       // expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
       expect(await sc.safientMain.getClaimStatus(0)).to.equal('Active');
     });
+
+    it('Should get give ruling on a safe', async () => {
+      const sc = new SafientClaims(safientMainAdminSigner, chainId);
+      // expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
+      await sc.arbitrator.giveRulingCall(0,1);
+
+      expect(await sc.safientMain.getClaimStatus(0)).to.equal('Passed');
+    });
+
+    it('Should allow safe data sync', async () => {
+      const sc = new SafientClaims(inheritorSigner, chainId);
+
+      const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
+      const gaurdianFee = 0.01; // 0.01 ETH
+
+      // SUCCESS : create a safe
+      await sc.safientMain.syncSafe(
+        safeCreatorAddress, // 2nd account
+        safeIdOnThreadDB,
+        metaevidenceOrEvidenceURI,
+        String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+      );
+
+      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(2);
+      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
+
+      const safe = await sc.safientMain.getSafeBySafeId(safeIdOnThreadDB);
+
+      expect(safe.safeInheritor).to.equal(inheritorAddress);
+      expect(ethers.utils.formatEther(safe.safeFunds)).to.equal('0.011');
+    });
+
   });
 });

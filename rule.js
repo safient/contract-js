@@ -18,7 +18,7 @@ const { SafientClaims } = require('./dist/index');
 
   console.log('claim status : ' + (await sc.safientMain.getClaimStatus(0)));
 
-  const arbitratorContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+  const arbitratorContractAddress = '0x367761085BF3C12e5DA2Df99AC6E1a824612b8fb';
   const arbitratorContract = new Contract(arbitratorContractAddress, arbitratorABI, arbitratorSigner);
 
   await arbitratorContract.giveRuling(process.argv[2], process.argv[3]);
