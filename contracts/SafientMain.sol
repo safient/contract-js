@@ -46,7 +46,7 @@ contract SafientMain is IArbitrable, IEvidence {
     /* Storage - Public */
     IArbitrator public arbitrator;
 
-    address public safexMainAdmin;
+    address public safientMainAdmin;
 
     uint256 public safesCount = 0;
     uint256 public claimsCount = 0;
@@ -56,14 +56,11 @@ contract SafientMain is IArbitrable, IEvidence {
     mapping(string => Safe) public safes; // safes[safeId] => Safe
     mapping(uint256 => Claim) public claims; // claims[disputeId] => Claim, starts from 0 (because, disputeId starts from 0)
 
-    /* Storage - Private */
-    uint256 private _totalClaimsAllowed = 2;
-
     /* Modifiers */
-    modifier onlySafexMainAdmin {
+    modifier onlySafientMainAdmin() {
         require(
-            msg.sender == safexMainAdmin,
-            "Only SafexMain contract's admin can execute this"
+            msg.sender == safientMainAdmin,
+            "Only SafientMain contract's admin can execute this"
         );
         _;
     }
@@ -149,10 +146,6 @@ contract SafientMain is IArbitrable, IEvidence {
         Safe memory safe = safes[_safeId];
 
         require(
-            safe.claimsCount < _totalClaimsAllowed,
-            "Total number of claims on a safe has reached the limit"
-        );
-        require(
             msg.sender == safe.safeInheritor,
             "Only inheritor of the safe can create the claim"
         );
@@ -205,7 +198,7 @@ contract SafientMain is IArbitrable, IEvidence {
     /* Constructor */
     constructor(IArbitrator _arbitrator) {
         arbitrator = _arbitrator;
-        safexMainAdmin = msg.sender;
+        safientMainAdmin = msg.sender;
     }
 
     /* Functions - External */
@@ -470,14 +463,6 @@ contract SafientMain is IArbitrable, IEvidence {
         }
     }
 
-    /* Setters */
-    function setTotalClaimsAllowed(uint256 _claimsAllowed)
-        public
-        onlySafexMainAdmin
-    {
-        _totalClaimsAllowed = _claimsAllowed;
-    }
-
     /* Getters */
     function getSafientMainContractBalance()
         public
@@ -485,17 +470,5 @@ contract SafientMain is IArbitrable, IEvidence {
         returns (uint256 balance)
     {
         return address(this).balance;
-    }
-
-    function getTotalClaimsAllowed()
-        public
-        view
-        returns (uint256 totalClaimsAllowed)
-    {
-        return _totalClaimsAllowed;
-    }
-
-    function getSafeStage(uint256 _claimId) public view returns (ClaimStatus) {
-        return claims[_claimId].status;
     }
 }

@@ -1,7 +1,5 @@
 const { ethers } = require('hardhat');
 const { JsonRpcProvider } = require('@ethersproject/providers');
-const { Contract } = require('@ethersproject/contracts');
-const { arbitratorABI } = require('./abis/arbitratorABI');
 const chai = require('chai');
 
 require('dotenv').config();
@@ -18,7 +16,6 @@ describe('safientMain', async () => {
   const safeIdOnThreadDB = '123456789';
   let provider, chainId;
   let safientMainAdminSigner, safeCreatorSigner, inheritorSigner, accountXSigner, safeCreatorAddress, inheritorAddress;
-  let arbitratorAddress;
 
   describe('SafientClaims SDK Flow', async () => {
     before(async () => {
@@ -57,14 +54,14 @@ describe('safientMain', async () => {
       const sc = new SafientClaims(safeCreatorSigner, chainId);
 
       const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
-      const gaurdianFee = 0.01; // 0.01 ETH
+      const guardianFee = 0.01; // 0.01 ETH
 
       // SUCCESS : create a safe
       await sc.safientMain.createSafe(
         inheritorAddress, // 2nd account
         safeIdOnThreadDB,
         metaevidenceOrEvidenceURI,
-        String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+        String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
       );
 
       expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(1);
@@ -81,7 +78,7 @@ describe('safientMain', async () => {
           inheritorAddress,
           '',
           metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
         )
       ).to.be.rejectedWith(Error);
 
@@ -101,7 +98,7 @@ describe('safientMain', async () => {
           inheritorAddress,
           safeIdOnThreadDB,
           '',
-          String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
         )
       ).to.be.rejectedWith(Error);
 
@@ -111,7 +108,7 @@ describe('safientMain', async () => {
           '0x0',
           safeIdOnThreadDB,
           metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
         )
       ).to.be.rejectedWith(Error);
 
@@ -121,12 +118,10 @@ describe('safientMain', async () => {
           safeCreatorAddress,
           safeIdOnThreadDB,
           metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
         )
       ).to.be.rejectedWith(Error);
     });
-
-    
 
     it('Should allow users to create a claim', async () => {
       let sc;
@@ -148,15 +143,6 @@ describe('safientMain', async () => {
       expect(claim.claimedBy).to.equal(inheritorAddress);
       expect(claim.result).to.equal('Active');
     });
-
-    // it('Arbitrator should be able to give ruling', async () => {
-    //   const sc = new SafientClaims(accountXSigner, chainId);
-
-    //   const arbitratorContract = new Contract(arbitratorAddress, arbitratorABI, safientMainAdminSigner);
-    //   await arbitratorContract.giveRuling(0, 2);
-
-    //   expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
-    // });
 
     it('Should allow users to deposit funds in a safe', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
@@ -181,21 +167,6 @@ describe('safientMain', async () => {
 
       // FAILURE : no funds remaining in the safe
       await expect(sc.safientMain.recoverSafeFunds(safeIdOnThreadDB)).to.be.rejectedWith(Error);
-    });
-
-    it('Should allow admin to set the total number of claims allowed on a safe', async () => {
-      let sc;
-      sc = new SafientClaims(accountXSigner, chainId);
-
-      // FAILURE : only SafexMain contract's admin can execute this
-      await expect(sc.safientMain.setTotalClaimsAllowed(3)).to.be.rejectedWith(Error);
-
-      sc = new SafientClaims(safientMainAdminSigner, chainId);
-
-      // SUCCESS : set new total number of claims allowed
-      await sc.safientMain.setTotalClaimsAllowed(3);
-
-      expect(await sc.safientMain.getTotalClaimsAllowed()).to.equal(3);
     });
 
     it('Should get the safe on contract by its Safe Id', async () => {
@@ -256,37 +227,32 @@ describe('safientMain', async () => {
       expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0);
     });
 
-    it('Should get the total number of claims allowed on a safe', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getTotalClaimsAllowed()).to.equal(3);
-    });
-
     it('Should get the status of the claim on a safe', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
-      // expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
-      expect(await sc.safientMain.getClaimStatus(0)).to.equal('Active');
+      expect(await sc.safientMain.getClaimStatus(0)).to.equal(0);
     });
 
-    it('Should get give ruling on a safe', async () => {
+    it('Should give ruling on a claim', async () => {
       const sc = new SafientClaims(safientMainAdminSigner, chainId);
-      // expect(await sc.safientMain.getClaimStatus(0)).to.equal('Failed');
-      await sc.arbitrator.giveRulingCall(0,1);
 
-      expect(await sc.safientMain.getClaimStatus(0)).to.equal('Passed');
+      const result = await sc.arbitrator.giveRulingCall(0, 1);
+
+      expect(result).to.equal(true);
+      expect(await sc.safientMain.getClaimStatus(0)).to.equal(1);
     });
 
     it('Should allow safe data sync', async () => {
       const sc = new SafientClaims(inheritorSigner, chainId);
 
       const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
-      const gaurdianFee = 0.01; // 0.01 ETH
+      const guardianFee = 0.01; // 0.01 ETH
 
       // SUCCESS : create a safe
       await sc.safientMain.syncSafe(
         safeCreatorAddress, // 2nd account
         safeIdOnThreadDB,
         metaevidenceOrEvidenceURI,
-        String(ethers.utils.parseEther(String(arbitrationFee + gaurdianFee)))
+        String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
       );
 
       expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(2);
@@ -297,6 +263,5 @@ describe('safientMain', async () => {
       expect(safe.safeInheritor).to.equal(inheritorAddress);
       expect(ethers.utils.formatEther(safe.safeFunds)).to.equal('0.011');
     });
-
   });
 });

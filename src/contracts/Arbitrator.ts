@@ -4,9 +4,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import networks from '../utils/networks.json';
-import { artifacts } from 'hardhat';
-import { Artifact } from 'hardhat/types';
-import data from '../artifacts/AutoAppealableArbitrator.json'
+import data from '../artifacts/AutoAppealableArbitrator.json';
 export class Arbitrator {
   private signer: Signer;
   private arbitratorABI: ContractABI;
@@ -22,7 +20,7 @@ export class Arbitrator {
     this.logger = Logger.globalLogger();
     this.signer = signer;
     this.arbitratorABI = data.abi;
-    
+
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.arbitrator !== ''
@@ -57,9 +55,13 @@ export class Arbitrator {
     }
   };
 
-  givingRulingCall = async(disuputeId:number, ruling:number): Promise<any> => {
+  giveRulingCall = async (disputeId: number, ruling: number): Promise<boolean> => {
+    try {
       const contract = await this.getContractInstance();
-      console.log(contract)
-      await contract.giveRuling(disuputeId, ruling);
-  }
+      await contract.giveRuling(disputeId, ruling);
+      return true;
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
 }

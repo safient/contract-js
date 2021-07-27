@@ -253,7 +253,7 @@ contract Arbitrable is IArbitrable {
     Arbitrator public arbitrator;
     bytes public arbitratorExtraData; // Extra data to require particular dispute and appeal behaviour.
 
-    modifier onlyArbitrator {
+    modifier onlyArbitrator() {
         require(
             msg.sender == address(arbitrator),
             "Can only be called by the arbitrator."
@@ -306,7 +306,7 @@ contract AutoAppealableArbitrator is Arbitrator {
         uint256 appealPeriodEnd; // The end of the appeal Period. 0 before it is appealable.
     }
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "Can only be called by the owner.");
         _;
     }
