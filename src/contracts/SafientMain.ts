@@ -1,17 +1,18 @@
-import { Safe, Claim, Tx, ContractAddress, ContractABI, Signer, RecoveryProof } from '../types/Types';
-import { safientMainABI } from '../abis/SafientMain';
+import { Safe, Claim, ContractAddress, ContractABI, Signer, RecoveryProof } from '../types/Types';
+import { TransactionResponse } from '@ethersproject/providers';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
 import networks from '../utils/networks.json';
-
+import data from '../artifacts/SafientMain.json';
 export class SafientMain {
   private signer: Signer;
   private safientMainABI: ContractABI;
   private safientMainAddress: ContractAddress;
   private logger: Logger;
+  private tx: TransactionResponse;
 
   /**
    * Arbitrator Constructor
@@ -21,12 +22,12 @@ export class SafientMain {
   constructor(signer: Signer, chainId: number) {
     this.logger = Logger.globalLogger();
     this.signer = signer;
-    this.safientMainABI = safientMainABI;
+    this.safientMainABI = data.abi;
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.safientMain !== ''
-      ? (this.safientMainAddress = network.addresses.safientMain)
+      ? (this.safientMainAddress = data.address)
       : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
   }
 
@@ -56,11 +57,34 @@ export class SafientMain {
     safeIdOnThreadDB: string,
     metaevidenceURI: string,
     value: string
-  ): Promise<Tx> => {
+  ): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
-      return tx;
+      this.tx = await contract.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
+      return this.tx;
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * Sync safe
+   * @param creatorAddress - Address of the creator who created the safe offchain
+   * @param safeIdOnThreadDB - Id of the safe on threadDB
+   * @param metaevidenceURI - IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
+   * @param value - Safe maintanence fee in Gwei, minimum arbitration fee required
+   * @returns A transaction response
+   */
+  syncSafe = async (
+    creatorAddress: string,
+    safeIdOnThreadDB: string,
+    metaevidenceURI: string,
+    value: string
+  ): Promise<TransactionResponse> => {
+    try {
+      const contract = await this.getContractInstance();
+      this.tx = await contract.syncSafe(creatorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
+      return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -72,11 +96,11 @@ export class SafientMain {
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
    * @returns A transaction response
    */
-  createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<Tx> => {
+  createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      const tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
-      return tx;
+      const contract: Contract = await this.getContractInstance();
+      this.tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
+      return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -88,11 +112,11 @@ export class SafientMain {
    * @param value - Funds in Gwei
    * @returns A transaction response
    */
-  depositSafeFunds = async (safeIdOnThreadDB: string, value: string): Promise<Tx> => {
+  depositSafeFunds = async (safeIdOnThreadDB: string, value: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.depositSafeFunds(safeIdOnThreadDB, { value });
-      return tx;
+      this.tx = await contract.depositSafeFunds(safeIdOnThreadDB, { value });
+      return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -103,11 +127,11 @@ export class SafientMain {
    * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeIdOnThreadDB: string): Promise<Tx> => {
+  recoverSafeFunds = async (safeIdOnThreadDB: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.recoverSafeFunds(safeIdOnThreadDB);
-      return tx;
+      this.tx = await contract.recoverSafeFunds(safeIdOnThreadDB);
+      return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -119,26 +143,11 @@ export class SafientMain {
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
    * @returns A transaction response
    */
-  submitEvidence = async (disputeId: number, evidenceURI: string): Promise<Tx> => {
+  submitEvidence = async (disputeId: number, evidenceURI: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      const tx = await contract.submitEvidence(disputeId, evidenceURI);
-      return tx;
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
-   * Set a new value for the total claims allowed on a safe, only SafientMain contract deployer can execute this
-   * @param claimsAllowed - Number of total claims allowed
-   * @returns A transaction response
-   */
-  setTotalClaimsAllowed = async (claimsAllowed: number): Promise<Tx> => {
-    try {
-      const contract = await this.getContractInstance();
-      const tx = await contract.setTotalClaimsAllowed(claimsAllowed);
-      return tx;
+      this.tx = await contract.submitEvidence(disputeId, evidenceURI);
+      return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -264,25 +273,11 @@ export class SafientMain {
   };
 
   /**
-   * Get the total number of claims allowed on a safe
-   * @returns The total number of claims allowed on a safe
-   */
-  getTotalClaimsAllowed = async (): Promise<number> => {
-    try {
-      const contract = await this.getContractInstance();
-      const totalClaimsAllowed: BigNumber = await contract.getTotalClaimsAllowed();
-      return Number(totalClaimsAllowed);
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
-   * Get the status (Active, Passed, Failed or Refused To Arbitrate) of a claim by claim id
+   * Get the status (0 - Active, 1 - Passed, 2 - Failed or 3 - Refused To Arbitrate) of a claim by claim id
    * @param claimId - Id of the claim
    * @returns The status of the claim
    */
-  getClaimStatus = async (claimId: number): Promise<string> => {
+  getClaimStatus = async (claimId: number): Promise<number> => {
     try {
       const contract = await this.getContractInstance();
       const claimsCount: BigNumber = await contract.claimsCount();
@@ -290,25 +285,7 @@ export class SafientMain {
         this.logger.throwArgumentError('Claim Id does not exist', 'claimId', claimId);
       } else {
         const claim: Claim = await contract.claims(claimId);
-        let status: string;
-        switch (claim.status) {
-          case 0:
-            status = 'Active';
-            break;
-          case 1:
-            status = 'Passed';
-            break;
-          case 2:
-            status = 'Failed';
-            break;
-          case 3:
-            status = 'Refused To Arbitrate';
-            break;
-          default:
-            status = 'Active';
-            break;
-        }
-        return status;
+        return claim.status;
       }
     } catch (e) {
       this.logger.throwError(e.message);
@@ -316,15 +293,15 @@ export class SafientMain {
   };
 
   /**
-   * Gaurdian proof
-   * @param message - message
-   * @param signature - signature
-   * @param guardianProof - guardian proof
-   * @param secrets - secrets
+   * Guardian proof
+   * @param message - message generated during safe creation, also signed by the safe creator
+   * @param signature - signature of the message signed by the creator
+   * @param guardianProof - object containing guardian address and his secret
+   * @param secrets - array of all the secrets of all the guardians, for cross verification
    * @param safeIdOnThreadDB - Id of the safe on threadDB
-   * @returns
+   * @returns If the guardian proof was true or false
    */
-  gaurdianProof = async (
+  guardianProof = async (
     message: string,
     signature: Bytes,
     guardianProof: RecoveryProof[],

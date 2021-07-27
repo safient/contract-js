@@ -46,7 +46,7 @@ contract SafientMain is IArbitrable, IEvidence {
     /* Storage - Public */
     IArbitrator public arbitrator;
 
-    address public safexMainAdmin;
+    address public safientMainAdmin;
 
     uint256 public safesCount = 0;
     uint256 public claimsCount = 0;
@@ -56,14 +56,11 @@ contract SafientMain is IArbitrable, IEvidence {
     mapping(string => Safe) public safes; // safes[safeId] => Safe
     mapping(uint256 => Claim) public claims; // claims[disputeId] => Claim, starts from 0 (because, disputeId starts from 0)
 
-    /* Storage - Private */
-    uint256 private _totalClaimsAllowed = 2;
-
     /* Modifiers */
-    modifier onlySafexMainAdmin {
+    modifier onlySafientMainAdmin() {
         require(
-            msg.sender == safexMainAdmin,
-            "Only SafexMain contract's admin can execute this"
+            msg.sender == safientMainAdmin,
+            "Only SafientMain contract's admin can execute this"
         );
         _;
     }
@@ -109,6 +106,34 @@ contract SafientMain is IArbitrable, IEvidence {
         _;
     }
 
+    modifier syncSafeRequisite(
+        address _creator,
+        string memory _safeId,
+        string calldata _metaEvidence
+    ) {
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+        require(
+            msg.value >= arbitrator.arbitrationCost(""),
+            "Inadequate fee payment"
+        );
+        require(
+            bytes(_metaEvidence).length > 0,
+            "Should provide metaEvidence to create a safe"
+        );
+        require(
+            _creator != address(0),
+            "Should provide an creator for the safe"
+        );
+        require(
+            msg.sender != _creator,
+            "Safe should be synced by the inheritor of the safe"
+        );
+        _;
+    }
+
     modifier claimCreationRequisite(
         string memory _safeId,
         string calldata _evidence
@@ -120,10 +145,6 @@ contract SafientMain is IArbitrable, IEvidence {
 
         Safe memory safe = safes[_safeId];
 
-        require(
-            safe.claimsCount < _totalClaimsAllowed,
-            "Total number of claims on a safe has reached the limit"
-        );
         require(
             msg.sender == safe.safeInheritor,
             "Only inheritor of the safe can create the claim"
@@ -177,7 +198,7 @@ contract SafientMain is IArbitrable, IEvidence {
     /* Constructor */
     constructor(IArbitrator _arbitrator) {
         arbitrator = _arbitrator;
-        safexMainAdmin = msg.sender;
+        safientMainAdmin = msg.sender;
     }
 
     /* Functions - External */
@@ -215,6 +236,36 @@ contract SafientMain is IArbitrable, IEvidence {
 
         emit MetaEvidence(metaEvidenceID, _metaEvidence);
         emit CreateSafe(msg.sender, _inheritor, metaEvidenceID);
+    }
+
+    function syncSafe(
+        address _creator,
+        string memory _safeId,
+        string calldata _metaEvidence
+    ) external payable syncSafeRequisite(_creator, _safeId, _metaEvidence) {
+        metaEvidenceID += 1;
+
+        Safe memory safe = safes[_safeId];
+        safe = Safe({
+            safeId: _safeId,
+            safeCreatedBy: _creator,
+            safeCurrentOwner: _creator,
+            safeInheritor: msg.sender,
+            metaEvidenceId: metaEvidenceID,
+            claimsCount: 0,
+            safeFunds: msg.value
+        });
+        safes[_safeId] = safe;
+
+        (bool sent, bytes memory data) = address(this).call{value: msg.value}(
+            ""
+        );
+        require(sent, "Failed to send Ether");
+
+        safesCount += 1;
+
+        emit MetaEvidence(metaEvidenceID, _metaEvidence);
+        emit CreateSafe(_creator, msg.sender, metaEvidenceID);
     }
 
     function createClaim(string memory _safeId, string calldata _evidence)
@@ -412,14 +463,6 @@ contract SafientMain is IArbitrable, IEvidence {
         }
     }
 
-    /* Setters */
-    function setTotalClaimsAllowed(uint256 _claimsAllowed)
-        public
-        onlySafexMainAdmin
-    {
-        _totalClaimsAllowed = _claimsAllowed;
-    }
-
     /* Getters */
     function getSafientMainContractBalance()
         public
@@ -427,17 +470,5 @@ contract SafientMain is IArbitrable, IEvidence {
         returns (uint256 balance)
     {
         return address(this).balance;
-    }
-
-    function getTotalClaimsAllowed()
-        public
-        view
-        returns (uint256 totalClaimsAllowed)
-    {
-        return _totalClaimsAllowed;
-    }
-
-    function getSafeStage(uint256 _claimId) public view returns (ClaimStatus) {
-        return claims[_claimId].status;
     }
 }

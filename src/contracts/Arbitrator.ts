@@ -1,10 +1,10 @@
-import { arbitratorABI } from '../abis/Arbitrator';
 import { ContractAddress, ContractABI, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import networks from '../utils/networks.json';
+import data from '../artifacts/AutoAppealableArbitrator.json';
 export class Arbitrator {
   private signer: Signer;
   private arbitratorABI: ContractABI;
@@ -19,12 +19,12 @@ export class Arbitrator {
   constructor(signer: Signer, chainId: number) {
     this.logger = Logger.globalLogger();
     this.signer = signer;
-    this.arbitratorABI = arbitratorABI;
+    this.arbitratorABI = data.abi;
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
     network !== undefined && network.addresses.arbitrator !== ''
-      ? (this.arbitratorAddress = network.addresses.arbitrator)
+      ? (this.arbitratorAddress = data.address)
       : this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
   }
 
@@ -50,6 +50,16 @@ export class Arbitrator {
       const contract = await this.getContractInstance();
       const arbitrationFee: BigNumber = await contract.arbitrationCost(0x0);
       return Number(formatEther(arbitrationFee));
+    } catch (e) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  giveRulingCall = async (disputeId: number, ruling: number): Promise<boolean> => {
+    try {
+      const contract = await this.getContractInstance();
+      await contract.giveRuling(disputeId, ruling);
+      return true;
     } catch (e) {
       this.logger.throwError(e.message);
     }

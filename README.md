@@ -65,11 +65,11 @@ sc.arbitrator.getArbitrationFee
 
 ```
 sc.safientMain.createSafe
+sc.safientMain.syncSafe
 sc.safientMain.createClaim
 sc.safientMain.submitEvidence
 sc.safientMain.depositSafeFunds
 sc.safientMain.recoverSafeFunds
-sc.safientMain.setTotalClaimsAllowed
 sc.safientMain.getTotalNumberOfSafes
 sc.safientMain.getTotalNumberOfClaims
 sc.safientMain.getAllClaims
@@ -77,9 +77,8 @@ sc.safientMain.getSafeBySafeId
 sc.safientMain.getClaimByClaimId
 sc.safientMain.getClaimsOnSafeBySafeId
 sc.safientMain.getClaimStatus
-sc.safientMain.getTotalClaimsAllowed
 sc.safientMain.getSafientMainContractBalance
-sc.safientMain.gaurdianProof
+sc.safientMain.guardianProof
 ```
 
 ## API details
@@ -121,6 +120,32 @@ const createSafe = async (inheritorAddress, safeIdOnThreadDB, metaevidenceURI, v
 | Parameter          | Type     | Description                                                                        |
 | :----------------- | :------- | :--------------------------------------------------------------------------------- |
 | `inheritorAddress` | `string` | **Required**. Address of the beneficiary who can claim to inherit this safe        |
+| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                  |
+| `metaevidenceURI`  | `string` | **Required**. IPFS URI pointing to the metaevidence related to arbitration details |
+| `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required   |
+
+<br />
+
+| Returns                | Type     | Description                              |
+| :--------------------- | :------- | :--------------------------------------- |
+| `Transaction Response` | `object` | Includes all properties of a transaction |
+
+#### Sync Safe
+
+```javascript
+const syncSafe = async (creatorAddress, safeIdOnThreadDB, metaevidenceURI, value) => {
+  try {
+    const tx = await sc.safientMain.syncSafe(creatorAddress, safeIdOnThreadDB, metaevidenceURI, value);
+    console.log(tx);
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+```
+
+| Parameter          | Type     | Description                                                                        |
+| :----------------- | :------- | :--------------------------------------------------------------------------------- |
+| `creatorAddress`   | `string` | **Required**. Address of the creator who created the safe offchain                 |
 | `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                  |
 | `metaevidenceURI`  | `string` | **Required**. IPFS URI pointing to the metaevidence related to arbitration details |
 | `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required   |
@@ -221,31 +246,6 @@ const recoverSafeFunds = async (safeIdOnThreadDB) => {
 | Parameter          | Type     | Description                       |
 | :----------------- | :------- | :-------------------------------- |
 | `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB |
-
-<br />
-
-| Returns                | Type     | Description                              |
-| :--------------------- | :------- | :--------------------------------------- |
-| `Transaction Response` | `object` | Includes all properties of a transaction |
-
-#### Set Total Claims Allowed
-
-> Only **SafientMain contract deployer** can execute this
-
-```javascript
-const setTotalClaimsAllowed = async (claimsAllowed) => {
-  try {
-    const tx = await sc.safientMain.setTotalClaimsAllowed(claimsAllowed);
-    console.log(tx);
-  } catch (e) {
-    console.log(e.message);
-  }
-};
-```
-
-| Parameter       | Type     | Description                                  |
-| :-------------- | :------- | :------------------------------------------- |
-| `claimsAllowed` | `number` | **Required**. Number of total claims allowed |
 
 <br />
 
@@ -420,26 +420,9 @@ const getClaimStatus = async (claimId) => {
 
 <br />
 
-| Returns        | Type     | Description                                                                                |
-| :------------- | :------- | :----------------------------------------------------------------------------------------- |
-| `claim status` | `string` | Claim status represented by **Active**, **Passed**, **Failed** or **Refused To Arbitrate** |
-
-#### Get Total No. Of Claims Allowed On A Safe
-
-```javascript
-const getTotalClaimsAllowed = async () => {
-  try {
-    const claimsAllowed = await sc.safientMain.getTotalClaimsAllowed();
-    console.log(claimsAllowed);
-  } catch (e) {
-    console.log(e.message);
-  }
-};
-```
-
-| Returns                       | Type     | Description                           |
-| :---------------------------- | :------- | :------------------------------------ |
-| `Total no. of claims allowed` | `number` | Total no. of claims allowed on a safe |
+| Returns        | Type     | Description                                                                                                |
+| :------------- | :------- | :--------------------------------------------------------------------------------------------------------- |
+| `claim status` | `number` | Claim status represented by **0 - Active**, **1 - Passed**, **2 - Failed** or **3 - Refused To Arbitrate** |
 
 #### Get SafientMain Contract Total Balance
 
@@ -457,3 +440,39 @@ const getSafientMainContractBalance = async () => {
 | Returns                        | Type     | Description                                      |
 | :----------------------------- | :------- | :----------------------------------------------- |
 | `SafientMain contract balance` | `number` | Total balance of SafientMain contract in **ETH** |
+
+#### Guardian proof
+
+```javascript
+const guardianProof = async (message, signature, guardianProof, secrets, safeIdOnThreadDB) => {
+  try {
+    const result = await sc.safientMain.guardianProof(message, signature, guardianProof, secrets, safeIdOnThreadDB);
+    console.log(result);
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+```
+
+> Type **RecoveryProof**
+
+| Property  | Type     | Description      |
+| :-------- | :------- | :--------------- |
+| `secret`  | `string` | Secret           |
+| `address` | `string` | Guardian address |
+
+<br />
+
+| Parameter          | Type            | Description                                                                           |
+| :----------------- | :-------------- | :------------------------------------------------------------------------------------ |
+| `message`          | `string`        | **Required**. Message generated during safe creation, also signed by the safe creator |
+| `signature`        | `bytes`         | **Required**. Signature of the message signed by the creator                          |
+| `guardianProof`    | `RecoveryProof` | **Required**. Object containing guardian address and his secret                       |
+| `secrets`          | `string[]`      | **Required**. Array of all the secrets of all the guardians, for cross verification   |
+| `safeIdOnThreadDB` | `string`        | **Required**. Id of the safe on threadDB                                              |
+
+<br />
+
+| Returns                 | Type      | Description                     |
+| :---------------------- | :-------- | :------------------------------ |
+| `Guardian proof result` | `boolean` | Guardian proof is true or false |

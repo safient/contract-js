@@ -22,12 +22,11 @@ export type Claim = {
   result: string;
 };
 
-export type Tx = TransactionResponse;
 export type ContractAddress = string;
 export type ContractABI = ContractInterface | object[];
 export type Signer = JsonRpcSigner;
 
 export type RecoveryProof = {
-  secretHash: string;
-  guardianAddress: string;
+  secret: string;
+  address: string;
 };

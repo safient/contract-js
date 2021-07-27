@@ -17,9 +17,18 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
   const contractArgs = _args || [];
   const contractArtifacts = await hre.ethers.getContractFactory(contractName, { libraries: libraries });
   const deployed = await contractArtifacts.deploy(...contractArgs, overrides);
+  const contractArtifact = await hre.artifacts.readArtifact(contractName);
   const encoded = abiEncodeArgs(deployed, contractArgs);
 
   fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
+  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
+    if (err) throw err;
+  });
+  const contractData = {
+    address: deployed.address,
+    abi: contractArtifact.abi,
+  };
+  fs.writeFileSync(`src/artifacts/${contractName}.json`, JSON.stringify(contractData));
 
   let extraGasInfo = '';
 
