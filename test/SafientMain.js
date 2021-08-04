@@ -34,22 +34,6 @@ describe('safientMain', async () => {
       inheritorAddress = await inheritorSigner.getAddress();
     });
 
-    it('Should deploy SafientMain', async () => {
-      const AutoAppealableArbitrator = await ethers.getContractFactory('AutoAppealableArbitrator');
-      let arbitrator = await AutoAppealableArbitrator.deploy(ethers.utils.parseEther('0.001'));
-      await arbitrator.deployed();
-
-      const SafientMain = await ethers.getContractFactory('SafientMain');
-      let safientMain = await SafientMain.deploy(arbitrator.address);
-      await safientMain.deployed();
-
-      arbitratorAddress = arbitrator.address;
-      safientMainAddress = safientMain.address;
-
-      expect(await safientMain.arbitrator()).to.equal(arbitrator.address);
-      expect(await arbitrator.arbitrationCost(123)).to.equal(ethers.utils.parseEther('0.001'));
-    });
-
     it('Should allow users to create a safe', async () => {
       const sc = new SafientClaims(safeCreatorSigner, chainId);
 

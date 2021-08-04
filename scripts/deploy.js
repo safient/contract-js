@@ -14,6 +14,10 @@ const abiEncodeArgs = (deployed, contractArgs) => {
 const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) => {
   console.log(` 🛰  Deploying: ${contractName}`);
 
+  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
+    if (err) throw err;
+  });
+
   const contractArgs = _args || [];
   const contractArtifacts = await hre.ethers.getContractFactory(contractName, { libraries: libraries });
   const deployed = await contractArtifacts.deploy(...contractArgs, overrides);
@@ -21,14 +25,13 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
   const encoded = abiEncodeArgs(deployed, contractArgs);
 
   fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
-  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
-    if (err) throw err;
-  });
-  const contractData = {
-    address: deployed.address,
-    abi: contractArtifact.abi,
-  };
-  fs.writeFileSync(`src/artifacts/${contractName}.json`, JSON.stringify(contractData));
+  if (contractName !== 'Claims') {
+    const contractData = {
+      address: deployed.address,
+      abi: contractArtifact.abi,
+    };
+    fs.writeFileSync(`src/artifacts/${contractName}.json`, JSON.stringify(contractData));
+  }
 
   let extraGasInfo = '';
 
@@ -58,14 +61,13 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
 
 async function main() {
   console.log(' 📡 Deploying...\n');
-
+  const claims = await deploy('Claims');
   if (network === 'localhost') {
     const arbitrator = await deploy(arbitratorContract, [arbitrationFee]);
-    await deploy(arbitrableContract, [arbitrator.address]);
+    await deploy(arbitrableContract, [arbitrator.address], {}, { Claims: String(claims.address) });
   } else {
-    await deploy(arbitrableContract, [arbitratorAddress]);
+    await deploy(arbitrableContract, [arbitratorAddress], {}, { Claims: String(claims.address) });
   }
-
   console.log(' 💾  Artifacts (address, abi, and args) saved to: ', chalk.blue('./artifacts'), '\n\n');
 }
 
