@@ -14,7 +14,7 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile",
     "chain": "hardhat node",
-    "test": "hardhat test",
+    "test": "hardhat test --network hardhat",
     "deploy": "hardhat run scripts/deploy.js",
     "build": "tsc -p tsconfig.json"
   },

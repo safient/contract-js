@@ -1,251 +1,303 @@
 const { ethers } = require('hardhat');
-const { JsonRpcProvider } = require('@ethersproject/providers');
-const chai = require('chai');
+const { use, expect } = require('chai');
+const { solidity } = require('ethereum-waffle');
 
-require('dotenv').config();
+use(solidity);
 
-const expect = chai.expect;
-chai.use(require('chai-as-promised'));
+describe('SafientMain', async () => {
+  let autoAppealableArbitrator, claims, safientMain, safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX;
+  const safeId1 = '01234567890';
+  const safeId2 = '01234567891';
 
-const metaevidenceOrEvidenceURI =
-  'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/';
+  describe('SafientMain Flow', async () => {
+    it('Should deploy SafientMain', async () => {
+      [safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX] = await ethers.getSigners();
 
-const { SafientClaims } = require('../dist/index');
+      const AutoAppealableArbitrator = await ethers.getContractFactory('AutoAppealableArbitrator');
+      autoAppealableArbitrator = await AutoAppealableArbitrator.deploy(ethers.utils.parseEther('0.001'));
+      await autoAppealableArbitrator.deployed();
 
-describe('safientMain', async () => {
-  const safeIdOnThreadDB = '123456789';
-  let provider, chainId;
-  let safientMainAdminSigner, safeCreatorSigner, inheritorSigner, accountXSigner, safeCreatorAddress, inheritorAddress;
+      const Claims = await ethers.getContractFactory('Claims');
+      claims = await Claims.deploy(autoAppealableArbitrator.address);
+      await claims.deployed();
 
-  describe('SafientClaims SDK Flow', async () => {
-    before(async () => {
-      // Provider and ChainId
-      provider = new JsonRpcProvider('http://localhost:8545');
-      const providerNetworkData = await provider.getNetwork();
-      chainId = providerNetworkData.chainId;
+      const SafientMain = await ethers.getContractFactory('SafientMain');
+      safientMain = await SafientMain.deploy(autoAppealableArbitrator.address, claims.address);
+      await safientMain.deployed();
 
-      // Signers, Signer addresses
-      safientMainAdminSigner = await provider.getSigner(0);
-      safeCreatorSigner = await provider.getSigner(1);
-      inheritorSigner = await provider.getSigner(2);
-      accountXSigner = await provider.getSigner(3);
-
-      safeCreatorAddress = await safeCreatorSigner.getAddress();
-      inheritorAddress = await inheritorSigner.getAddress();
+      expect(await safientMain.arbitratorContract()).to.equal(autoAppealableArbitrator.address);
+      expect(await safientMain.claimsContract()).to.equal(claims.address);
+      expect(await autoAppealableArbitrator.arbitrationCost(123)).to.equal(ethers.utils.parseEther('0.001'));
     });
 
-    it('Should allow users to create a safe', async () => {
-      const sc = new SafientClaims(safeCreatorSigner, chainId);
-
-      const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
-      const guardianFee = 0.01; // 0.01 ETH
+    it('Should allow safe creators to create a safe', async () => {
+      const arbitrationFee = await autoAppealableArbitrator.arbitrationCost(123); // 0.001 eth
 
       // SUCCESS : create a safe
-      await sc.safientMain.createSafe(
-        inheritorAddress, // 2nd account
-        safeIdOnThreadDB,
-        metaevidenceOrEvidenceURI,
-        String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
-      );
+      await safientMain
+        .connect(safeCreator)
+        .createSafe(
+          beneficiary.address,
+          safeId1,
+          'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+          {
+            value: arbitrationFee.toNumber() + ethers.utils.parseEther('0.001').toNumber(),
+          }
+        );
 
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(1);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
-
-      const safe = await sc.safientMain.getSafeBySafeId(safeIdOnThreadDB);
-
-      expect(safe.safeInheritor).to.equal(inheritorAddress);
-      expect(ethers.utils.formatEther(safe.safeFunds)).to.equal('0.011');
-
-      // FAILURE : ID of the safe on threadDB is not passed
-      await expect(
-        sc.safientMain.createSafe(
-          inheritorAddress,
-          '',
-          metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
-        )
-      ).to.be.rejectedWith(Error);
+      expect(await safientMain.safesCount()).to.equal(1);
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
+      const safe = await safientMain.safes(safeId1);
+      expect(safe.safeCreatedBy).to.equal(safeCreator.address);
+      expect(safe.safeBeneficiary).to.equal(beneficiary.address);
+      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
 
       // FAILURE : paying inadequate or no fee(arbitration fee) for safe creation
       await expect(
-        sc.safientMain.createSafe(
-          inheritorAddress,
-          safeIdOnThreadDB,
-          metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee - 0.0001)))
-        )
-      ).to.be.rejectedWith(Error);
+        safientMain
+          .connect(safeCreator)
+          .createSafe(
+            beneficiary.address,
+            safeId1,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber() - ethers.utils.parseEther('0.001').toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Inadequate fee payment');
 
       // FAILURE : metaEvidence is not passed
       await expect(
-        sc.safientMain.createSafe(
-          inheritorAddress,
-          safeIdOnThreadDB,
-          '',
-          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
-        )
-      ).to.be.rejectedWith(Error);
+        safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId1, '', {
+          value: arbitrationFee.toNumber(),
+        })
+      ).to.be.revertedWith('Should provide metaEvidence to create a safe');
 
-      // FAILURE : inheritor is an zero address
+      // FAILURE : beneficiary is an zero address
       await expect(
-        sc.safientMain.createSafe(
-          '0x0',
-          safeIdOnThreadDB,
-          metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
-        )
-      ).to.be.rejectedWith(Error);
+        safientMain
+          .connect(safeCreator)
+          .createSafe(
+            '0x0000000000000000000000000000000000000000',
+            safeId1,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Should provide an beneficiary for the safe');
 
-      // FAILURE : safe creator and inheritor are same
+      // FAILURE : safe creator and beneficiary are same
       await expect(
-        sc.safientMain.createSafe(
-          safeCreatorAddress,
-          safeIdOnThreadDB,
-          metaevidenceOrEvidenceURI,
-          String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
-        )
-      ).to.be.rejectedWith(Error);
+        safientMain
+          .connect(safeCreator)
+          .createSafe(
+            safeCreator.address,
+            safeId1,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Safe creator should not be the beneficiary of the safe');
     });
 
-    it('Should allow users to create a claim', async () => {
-      let sc;
-      sc = new SafientClaims(accountXSigner, chainId);
+    it('Should allow safe beneficiaries to create a safe (syncSafe)', async () => {
+      const arbitrationFee = await autoAppealableArbitrator.arbitrationCost(123); // 0.001 eth
 
-      // FAILURE : only inheritor of the safe can create the claim
-      await expect(sc.safientMain.createClaim(safeIdOnThreadDB, metaevidenceOrEvidenceURI)).to.be.rejectedWith(Error);
+      // SUCCESS : create a safe
+      await safientMain
+        .connect(beneficiary)
+        .syncSafe(
+          safeCreator.address,
+          safeId2,
+          'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+          {
+            value: arbitrationFee.toNumber() + ethers.utils.parseEther('0.001').toNumber(),
+          }
+        );
 
-      sc = new SafientClaims(inheritorSigner, chainId);
+      expect(await safientMain.safesCount()).to.equal(2);
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.004')); // 0.002 eth
+      const safe = await safientMain.safes(safeId2);
+      expect(safe.safeCreatedBy).to.equal(safeCreator.address);
+      expect(safe.safeBeneficiary).to.equal(beneficiary.address);
+      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
 
-      // SUCCESS : create a claim
-      await sc.safientMain.createClaim(safeIdOnThreadDB, metaevidenceOrEvidenceURI);
+      // FAILURE : paying inadequate or no fee(arbitration fee) for safe creation
+      await expect(
+        safientMain
+          .connect(beneficiary)
+          .syncSafe(
+            safeCreator.address,
+            safeId2,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber() - ethers.utils.parseEther('0.001').toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Inadequate fee payment');
 
-      expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(1);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.01);
+      // FAILURE : metaEvidence is not passed
+      await expect(
+        safientMain.connect(beneficiary).syncSafe(safeCreator.address, safeId2, '', {
+          value: arbitrationFee.toNumber(),
+        })
+      ).to.be.revertedWith('Should provide metaEvidence to create a safe');
 
-      const claim = await sc.safientMain.getClaimByClaimId(0);
+      // FAILURE : beneficiary is an zero address
+      await expect(
+        safientMain
+          .connect(beneficiary)
+          .syncSafe(
+            '0x0000000000000000000000000000000000000000',
+            safeId2,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Should provide an creator for the safe');
 
-      expect(claim.claimedBy).to.equal(inheritorAddress);
-      expect(claim.result).to.equal('Active');
+      // FAILURE : safe creator and beneficiary are same
+      await expect(
+        safientMain
+          .connect(beneficiary)
+          .syncSafe(
+            beneficiary.address,
+            safeId2,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
+            {
+              value: arbitrationFee.toNumber(),
+            }
+          )
+      ).to.be.revertedWith('Safe should be synced by the beneficiary of the safe');
+    });
+
+    it('Should allow beneficiaries to create a claim', async () => {
+      // FAILURE : safe does not exist
+      await expect(
+        safientMain
+          .connect(beneficiary)
+          .createClaim(
+            '123',
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/'
+          )
+      ).to.be.revertedWith('Safe does not exist');
+
+      // FAILURE : only beneficiary of the safe can create the claim
+      await expect(
+        safientMain
+          .connect(accountX)
+          .createClaim(
+            safeId1,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/'
+          )
+      ).to.be.revertedWith('Only beneficiary of the safe can create the claim');
+
+      // SUCCESS : create 1st claim
+      await safientMain.connect(beneficiary).createClaim(
+        safeId1,
+        'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
+      );
+
+      let claimsOnSafe;
+      claimsOnSafe = await safientMain.claimsOnSafe(safeId1);
+      expect(claimsOnSafe.length).to.equal(1);
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.003')); // 0.003 eth
+      let safe;
+      safe = await safientMain.safes(safeId1);
+      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.001')); // 0.001 eth
+      expect(safe.claimsCount).to.equal(1);
+      const claim1 = await safientMain.claims(0);
+      expect(claim1.disputeId).to.equal(0);
+      expect(claim1.claimedBy).to.equal(beneficiary.address);
+      expect(claim1.result).to.equal('Active');
+
+      // SUCCESS : create 2nd claim on the same safe
+      await safientMain.connect(beneficiary).createClaim(
+        safeId1,
+        'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
+      );
+
+      claimsOnSafe = await safientMain.claimsOnSafe(safeId1);
+      expect(claimsOnSafe.length).to.equal(2);
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
+      safe = await safientMain.safes(safeId1);
+      expect(safe.safeFunds).to.equal(0); // 0 eth
+      expect(safe.claimsCount).to.equal(2);
+      const claim2 = await safientMain.claims(1);
+      expect(claim2.disputeId).to.equal(1);
+      expect(claim2.claimedBy).to.equal(beneficiary.address);
+      expect(claim2.result).to.equal('Active');
+
+      // FAILURE : insufficient funds in the safe to pay the arbitration fee
+      await expect(
+        safientMain
+          .connect(beneficiary)
+          .createClaim(
+            safeId1,
+            'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/'
+          )
+      ).to.be.reverted;
+    });
+
+    it('Should allow arbitrator to give ruling on a claim', async () => {
+      // FAILURE : invalid ruling (only 2 options are available, but giving 3rd option as a ruling is invalid) - as per autoAppealableArbitrator
+      await expect(autoAppealableArbitrator.connect(safientMainAdminAndArbitrator).giveRuling(0, 3)).to.be.revertedWith(
+        'Invalid ruling'
+      );
+
+      // FAILURE : can only be called by the owner - as per autoAppealableArbitrator
+      await expect(autoAppealableArbitrator.connect(accountX).giveRuling(0, 2)).to.be.revertedWith(
+        'Can only be called by the owner'
+      );
+
+      // SUCCESS : give a ruling to claim1
+      await autoAppealableArbitrator.connect(safientMainAdminAndArbitrator).giveRuling(0, 2);
+
+      const claim1 = await safientMain.claims(0);
+      expect(claim1.result).to.equal('Failed'); // Failed
+
+      // SUCCESS : give a ruling to claim2
+      await autoAppealableArbitrator.connect(safientMainAdminAndArbitrator).giveRuling(1, 0);
+
+      const claim2 = await safientMain.claims(1);
+      expect(claim2.result).to.equal('RTA'); // Refused To Arbitrate (RTA)
     });
 
     it('Should allow users to deposit funds in a safe', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
+      // FAILURE : safe does not exist
+      await expect(
+        safientMain.connect(accountX).depositSafeFunds('123', { value: ethers.utils.parseEther('2') }) // 2 eth
+      ).to.be.revertedWith('Safe does not exist');
 
       // SUCCESS : deposit funds in a safe
-      await sc.safientMain.depositSafeFunds(safeIdOnThreadDB, String(ethers.utils.parseEther('2')));
+      await safientMain.connect(accountX).depositSafeFunds(safeId1, { value: ethers.utils.parseEther('2') }); // 2 eth
 
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(2.01);
+      const safe = await safientMain.safes(safeId1);
+      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('2')); // 2 eth
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('2.002')); // 2.002 eth
     });
 
-    it('Should allow the safe owner to recover funds in the safe', async () => {
-      let sc;
-      sc = new SafientClaims(accountXSigner, chainId);
+    it('Should allow the safe current owner to retrieve funds in the safe', async () => {
+      // FAILURE : safe does not exist
+      await expect(safientMain.connect(safeCreator).retrieveSafeFunds('123')).to.be.revertedWith('Safe does not exist');
 
-      // FAILURE : only safe owner can recover the funds
-      await expect(sc.safientMain.recoverSafeFunds(safeIdOnThreadDB)).to.be.rejectedWith(Error);
-
-      sc = new SafientClaims(safeCreatorSigner, chainId);
-
-      // SUCCESS : recover funds from a safe
-      await sc.safientMain.recoverSafeFunds(safeIdOnThreadDB);
-
-      // FAILURE : no funds remaining in the safe
-      await expect(sc.safientMain.recoverSafeFunds(safeIdOnThreadDB)).to.be.rejectedWith(Error);
-    });
-
-    it('Should get the safe on contract by its Safe Id', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-
-      const safe = await sc.safientMain.getSafeBySafeId(safeIdOnThreadDB);
-
-      expect(safe.safeId).to.equal(safeIdOnThreadDB);
-      expect(safe.safeCreatedBy).to.equal(safeCreatorAddress);
-      expect(safe.claimsCount).to.equal(1);
-      expect(safe.safeFunds).to.equal(0);
-    });
-
-    it('Should get the claim by its Claim Id', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-
-      const claim = await sc.safientMain.getClaimByClaimId(0);
-
-      expect(claim.safeId).to.equal(safeIdOnThreadDB);
-      expect(claim.disputeId).to.equal(0);
-      expect(claim.claimedBy).to.equal(inheritorAddress);
-    });
-
-    it('Should get all the claims on SafientMain', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-
-      const claims = await sc.safientMain.getAllClaims();
-
-      expect(claims.length).to.equal(1);
-      expect(claims[0].safeId).to.equal(safeIdOnThreadDB);
-      expect(claims[0].disputeId).to.equal(0);
-      expect(claims[0].claimedBy).to.equal(inheritorAddress);
-    });
-
-    it('Should get all the claims on a safe by Safe Id', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-
-      const claims = await sc.safientMain.getClaimsOnSafeBySafeId(safeIdOnThreadDB);
-
-      expect(claims.length).to.equal(1);
-      expect(claims[0].safeId).to.equal(safeIdOnThreadDB);
-      expect(claims[0].disputeId).to.equal(0);
-      expect(claims[0].claimedBy).to.equal(inheritorAddress);
-    });
-
-    it('Should get the total number of safes on the contract', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(1);
-    });
-
-    it('Should get the total number of claims on the contract', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(1);
-    });
-
-    it('Should get the SafientMain contract balance', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0);
-    });
-
-    it('Should get the status of the claim on a safe', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getClaimStatus(0)).to.equal(0);
-    });
-
-    it('Should give ruling on a claim', async () => {
-      const sc = new SafientClaims(safientMainAdminSigner, chainId);
-
-      const result = await sc.arbitrator.giveRulingCall(0, 1);
-
-      expect(result).to.equal(true);
-      expect(await sc.safientMain.getClaimStatus(0)).to.equal(1);
-    });
-
-    it('Should allow safe data sync', async () => {
-      const sc = new SafientClaims(inheritorSigner, chainId);
-
-      const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
-      const guardianFee = 0.01; // 0.01 ETH
-
-      // SUCCESS : create a safe
-      await sc.safientMain.syncSafe(
-        safeCreatorAddress, // 2nd account
-        safeIdOnThreadDB,
-        metaevidenceOrEvidenceURI,
-        String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
+      // FAILURE : only safe owner can retrieve the funds
+      await expect(safientMain.connect(accountX).retrieveSafeFunds(safeId1)).to.be.revertedWith(
+        'Only safe owner can retrieve the deposit balance'
       );
 
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(2);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
+      // SUCCESS : retrieve funds from a safe
+      await safientMain.connect(safeCreator).retrieveSafeFunds(safeId1);
 
-      const safe = await sc.safientMain.getSafeBySafeId(safeIdOnThreadDB);
+      expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
 
-      expect(safe.safeInheritor).to.equal(inheritorAddress);
-      expect(ethers.utils.formatEther(safe.safeFunds)).to.equal('0.011');
+      // FAILURE : no funds remaining in the safe
+      await expect(safientMain.connect(safeCreator).retrieveSafeFunds(safeId1)).to.be.revertedWith(
+        'No funds remaining in the safe'
+      );
     });
   });
 });

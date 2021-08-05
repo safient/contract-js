@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7;
+pragma solidity >=0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "./Types.sol";
-import "./Datas.sol";
 import "./Utils.sol";
 
 library Guardians {
     function guardianProof(
-        Datas.Data storage _data,
+        Types.MainData storage _mainData,
         string memory _message,
         bytes memory _signature,
         Types.RecoveryProof[] memory _guardianproof,
         string[] memory _secrets,
         string memory _safeId
-    ) internal returns (bool) {
-        Types.Safe memory safe = _data.safes[_safeId];
+    ) public returns (bool) {
+        Types.Safe memory safe = _mainData.safes[_safeId];
         uint256 noOfGuardians = _secrets.length;
         bytes32 r;
         bytes32 s;

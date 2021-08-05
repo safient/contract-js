@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7;
+pragma solidity >=0.7.0;
 
 import "../interfaces/IArbitrator.sol";
 
@@ -31,7 +31,7 @@ library Events {
     // Safient
     event CreateSafe(
         address indexed safeCreatedBy,
-        address indexed safeInheritor,
+        address indexed safeBeneficiary,
         uint256 indexed metaEvidenceId
     );
 
