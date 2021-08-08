@@ -15,15 +15,20 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 Terminal 1
 
 ```bash
-  npx tsc
-  npm run chain
+  npx tsc -w
 ```
 
 Terminal 2
 
 ```bash
+  npm run chain
+```
+
+Terminal 3
+
+```bash
   npm run deploy
-  npm run test
+  npm run tests
 ```
 
 ## Getting started
@@ -69,13 +74,12 @@ sc.safientMain.syncSafe
 sc.safientMain.createClaim
 sc.safientMain.submitEvidence
 sc.safientMain.depositSafeFunds
-sc.safientMain.recoverSafeFunds
+sc.safientMain.retrieveSafeFunds
 sc.safientMain.getTotalNumberOfSafes
 sc.safientMain.getTotalNumberOfClaims
 sc.safientMain.getAllClaims
 sc.safientMain.getSafeBySafeId
 sc.safientMain.getClaimByClaimId
-sc.safientMain.getClaimsOnSafeBySafeId
 sc.safientMain.getClaimStatus
 sc.safientMain.getSafientMainContractBalance
 sc.safientMain.guardianProof
@@ -107,9 +111,9 @@ const getArbitrationFee = async () => {
 #### Create Safe
 
 ```javascript
-const createSafe = async (inheritorAddress, safeIdOnThreadDB, metaevidenceURI, value) => {
+const createSafe = async (beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI, value) => {
   try {
-    const tx = await sc.safientMain.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, value);
+    const tx = await sc.safientMain.createSafe(beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI, value);
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -119,7 +123,7 @@ const createSafe = async (inheritorAddress, safeIdOnThreadDB, metaevidenceURI, v
 
 | Parameter          | Type     | Description                                                                        |
 | :----------------- | :------- | :--------------------------------------------------------------------------------- |
-| `inheritorAddress` | `string` | **Required**. Address of the beneficiary who can claim to inherit this safe        |
+| `beneficiaryAddress` | `string` | **Required**. Address of the beneficiary who can claim to inherit this safe        |
 | `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                  |
 | `metaevidenceURI`  | `string` | **Required**. IPFS URI pointing to the metaevidence related to arbitration details |
 | `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required   |
@@ -228,14 +232,14 @@ const depositSafeFunds = async (safeIdOnThreadDB, value) => {
 | :--------------------- | :------- | :--------------------------------------- |
 | `Transaction Response` | `object` | Includes all properties of a transaction |
 
-#### Recover Safe Funds
+#### Retrieve Safe Funds
 
 > Only **safe's current owner** can execute this
 
 ```javascript
-const recoverSafeFunds = async (safeIdOnThreadDB) => {
+const retrieveSafeFunds = async (safeIdOnThreadDB) => {
   try {
-    const tx = await sc.safientMain.recoverSafeFunds(safeIdOnThreadDB);
+    const tx = await sc.safientMain.retrieveSafeFunds(safeIdOnThreadDB);
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -377,29 +381,6 @@ const getAllClaims = async () => {
 | Returns           | Type      | Description                                    |
 | :---------------- | :-------- | :--------------------------------------------- |
 | `Array of claims` | `Claim[]` | Array of all the claims created on SafientMain |
-
-#### Get All Claims On A Safe By Safe Id
-
-```javascript
-const getClaimsOnSafeBySafeId = async (safeIdOnThreadDB) => {
-  try {
-    const claims = await sc.safientMain.getClaimsOnSafeBySafeId(safeIdOnThreadDB);
-    console.log(claims);
-  } catch (e) {
-    console.log(e.message);
-  }
-};
-```
-
-| Parameter          | Type     | Description                       |
-| :----------------- | :------- | :-------------------------------- |
-| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB |
-
-<br />
-
-| Returns           | Type      | Description                       |
-| :---------------- | :-------- | :-------------------------------- |
-| `Array of claims` | `Claim[]` | Array of all the claims on a safe |
 
 #### Get Claim Status
 
