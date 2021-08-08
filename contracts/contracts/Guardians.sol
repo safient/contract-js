@@ -2,19 +2,18 @@
 pragma solidity >=0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./Types.sol";
-import "./Utils.sol";
+import "../libraries/Types.sol";
+import "../libraries/Utils.sol";
 
-library Guardians {
-    function guardianProof(
-        Types.MainData storage _mainData,
+contract Guardians {
+    function _guardianProof(
         string memory _message,
         bytes memory _signature,
         Types.RecoveryProof[] memory _guardianproof,
         string[] memory _secrets,
-        string memory _safeId
-    ) public returns (bool) {
-        Types.Safe memory safe = _mainData.safes[_safeId];
+        address safeCreatedBy,
+        uint256 safeFunds
+    ) internal returns (bool) {
         uint256 noOfGuardians = _secrets.length;
         bytes32 r;
         bytes32 s;
@@ -36,8 +35,8 @@ library Guardians {
             bytes32 _messagehash = Utils.getMessageHash(_message);
             bytes32 _hash = Utils.getEthSignedMessageHash(_messagehash);
             address creator = ecrecover(_hash, v, r, s);
-            if (creator == safe.safeCreatedBy && safe.safeFunds != 0) {
-                uint256 guardianValue = safe.safeFunds / noOfGuardians;
+            if (creator == safeCreatedBy && safeFunds != 0) {
+                uint256 guardianValue = safeFunds / noOfGuardians;
                 for (
                     uint8 guardianIndex = 0;
                     guardianIndex < _guardianproof.length;
@@ -53,7 +52,7 @@ library Guardians {
                             _guardianproof[guardianIndex].secretHash ==
                             keccak256(abi.encodePacked(_secrets[secretIndex]))
                         ) {
-                            safe.safeFunds -= guardianValue;
+                            safeFunds -= guardianValue;
                             _guardianproof[guardianIndex].guardianAddress.call{
                                 value: guardianValue
                             }("");

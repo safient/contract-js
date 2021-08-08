@@ -9,7 +9,7 @@ describe('SafientMain', async () => {
   const safeId1 = '01234567890';
   const safeId2 = '01234567891';
 
-  describe('SafientMain Flow', async () => {
+  describe('SafientMain Contract Test Flow', async () => {
     it('Should deploy SafientMain', async () => {
       [safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX] = await ethers.getSigners();
 
@@ -17,16 +17,11 @@ describe('SafientMain', async () => {
       autoAppealableArbitrator = await AutoAppealableArbitrator.deploy(ethers.utils.parseEther('0.001'));
       await autoAppealableArbitrator.deployed();
 
-      const Claims = await ethers.getContractFactory('Claims');
-      claims = await Claims.deploy(autoAppealableArbitrator.address);
-      await claims.deployed();
-
       const SafientMain = await ethers.getContractFactory('SafientMain');
-      safientMain = await SafientMain.deploy(autoAppealableArbitrator.address, claims.address);
+      safientMain = await SafientMain.deploy(autoAppealableArbitrator.address);
       await safientMain.deployed();
 
-      expect(await safientMain.arbitratorContract()).to.equal(autoAppealableArbitrator.address);
-      expect(await safientMain.claimsContract()).to.equal(claims.address);
+      expect(await safientMain.arbitrator()).to.equal(autoAppealableArbitrator.address);
       expect(await autoAppealableArbitrator.arbitrationCost(123)).to.equal(ethers.utils.parseEther('0.001'));
     });
 
@@ -47,6 +42,7 @@ describe('SafientMain', async () => {
 
       expect(await safientMain.safesCount()).to.equal(1);
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
+
       const safe = await safientMain.safes(safeId1);
       expect(safe.safeCreatedBy).to.equal(safeCreator.address);
       expect(safe.safeBeneficiary).to.equal(beneficiary.address);
@@ -119,6 +115,7 @@ describe('SafientMain', async () => {
 
       expect(await safientMain.safesCount()).to.equal(2);
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.004')); // 0.002 eth
+
       const safe = await safientMain.safes(safeId2);
       expect(safe.safeCreatedBy).to.equal(safeCreator.address);
       expect(safe.safeBeneficiary).to.equal(beneficiary.address);
@@ -201,14 +198,13 @@ describe('SafientMain', async () => {
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
       );
 
-      let claimsOnSafe;
-      claimsOnSafe = await safientMain.claimsOnSafe(safeId1);
-      expect(claimsOnSafe.length).to.equal(1);
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.003')); // 0.003 eth
+
       let safe;
       safe = await safientMain.safes(safeId1);
       expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.001')); // 0.001 eth
       expect(safe.claimsCount).to.equal(1);
+
       const claim1 = await safientMain.claims(0);
       expect(claim1.disputeId).to.equal(0);
       expect(claim1.claimedBy).to.equal(beneficiary.address);
@@ -220,12 +216,12 @@ describe('SafientMain', async () => {
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
       );
 
-      claimsOnSafe = await safientMain.claimsOnSafe(safeId1);
-      expect(claimsOnSafe.length).to.equal(2);
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
+
       safe = await safientMain.safes(safeId1);
       expect(safe.safeFunds).to.equal(0); // 0 eth
       expect(safe.claimsCount).to.equal(2);
+
       const claim2 = await safientMain.claims(1);
       expect(claim2.disputeId).to.equal(1);
       expect(claim2.claimedBy).to.equal(beneficiary.address);
@@ -280,7 +276,7 @@ describe('SafientMain', async () => {
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('2.002')); // 2.002 eth
     });
 
-    it('Should allow the safe current owner to retrieve funds in the safe', async () => {
+    it('Should allow current owner of the to retrieve funds in the safe', async () => {
       // FAILURE : safe does not exist
       await expect(safientMain.connect(safeCreator).retrieveSafeFunds('123')).to.be.revertedWith('Safe does not exist');
 

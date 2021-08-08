@@ -46,21 +46,21 @@ export class SafientMain {
 
   /**
    * Create a safient safe
-   * @param inheritorAddress - Address of the beneficiary who can claim to inherit this safe
+   * @param beneficiaryAddress - Address of the beneficiary who can claim to inherit this safe
    * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @param metaevidenceURI - IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value - Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
    */
   createSafe = async (
-    inheritorAddress: string,
+    beneficiaryAddress: string,
     safeIdOnThreadDB: string,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      this.tx = await contract.createSafe(inheritorAddress, safeIdOnThreadDB, metaevidenceURI, { value });
+      this.tx = await contract.createSafe(beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI, { value });
       return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -123,14 +123,14 @@ export class SafientMain {
   };
 
   /**
-   * Recover funds from a safe - only safe's current owner can execute this
+   * Retrieve funds from a safe - only safe's current owner can execute this
    * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @returns A transaction response
    */
-  recoverSafeFunds = async (safeIdOnThreadDB: string): Promise<TransactionResponse> => {
+   retrieveSafeFunds = async (safeIdOnThreadDB: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      this.tx = await contract.recoverSafeFunds(safeIdOnThreadDB);
+      this.tx = await contract.retrieveSafeFunds(safeIdOnThreadDB);
       return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -210,21 +210,6 @@ export class SafientMain {
         const claim: Claim = await contract.claims(claimId);
         return claim;
       }
-    } catch (e) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
-   * Get all the claims made on a safe by safe id
-   * @param safeIdOnThreadDB - Id of the safe on threadDB
-   * @returns The array of all the Claim objects containing claim data on that safe
-   */
-  getClaimsOnSafeBySafeId = async (safeIdOnThreadDB: string): Promise<Claim[]> => {
-    try {
-      const claims = await this.getAllClaims();
-      const claimsOnSafeId = claims.filter((claim) => claim.safeId === safeIdOnThreadDB);
-      return claimsOnSafeId;
     } catch (e) {
       this.logger.throwError(e.message);
     }

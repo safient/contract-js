@@ -14,7 +14,9 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile",
     "chain": "hardhat node",
-    "test": "hardhat test --network hardhat",
+    "test-contract": "hardhat test --network hardhat",
+    "test-sdk": "mocha SDKTest.js",
+    "tests": "npm run test-contract && npm run test-sdk",
     "deploy": "hardhat run scripts/deploy.js",
     "build": "tsc -p tsconfig.json"
   },
