@@ -99,8 +99,7 @@ contract Claims {
             evidenceGroupID
         );
 
-        Types.Claim memory claim = claims[disputeID];
-        claim = Types.Claim({
+        claims[disputeID] = Types.Claim({
             disputeId: disputeID,
             claimedBy: msg.sender,
             metaEvidenceId: data.metaEvidenceId,
@@ -108,7 +107,6 @@ contract Claims {
             status: Types.ClaimStatus.Active,
             result: "Active"
         });
-        claims[disputeID] = claim;
 
         claimsCount += 1;
 

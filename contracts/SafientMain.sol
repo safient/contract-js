@@ -2,9 +2,9 @@
 pragma solidity >=0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./contracts/Safes.sol";
-import "./contracts/Claims.sol";
-import "./contracts/Guardians.sol";
+import "./components/Safes.sol";
+import "./components/Claims.sol";
+import "./components/Guardians.sol";
 import "./interfaces/IArbitrator.sol";
 import "./interfaces/IArbitrable.sol";
 
