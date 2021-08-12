@@ -6,7 +6,7 @@ export type Safe = {
   safeId: string;
   safeCreatedBy: string;
   safeCurrentOwner: string;
-  safeInheritor: string;
+  safeBeneficiary: string;
   metaEvidenceId: BigNumber;
   claimsCount: BigNumber;
   safeFunds: BigNumber;

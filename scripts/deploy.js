@@ -14,6 +14,10 @@ const abiEncodeArgs = (deployed, contractArgs) => {
 const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) => {
   console.log(` 🛰  Deploying: ${contractName}`);
 
+  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
+    if (err) throw err;
+  });
+
   const contractArgs = _args || [];
   const contractArtifacts = await hre.ethers.getContractFactory(contractName, { libraries: libraries });
   const deployed = await contractArtifacts.deploy(...contractArgs, overrides);
@@ -21,9 +25,6 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
   const encoded = abiEncodeArgs(deployed, contractArgs);
 
   fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
-  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
-    if (err) throw err;
-  });
   const contractData = {
     address: deployed.address,
     abi: contractArtifact.abi,
