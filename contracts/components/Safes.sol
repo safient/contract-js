@@ -93,8 +93,7 @@ contract Safes {
 
         metaEvidenceID += 1;
 
-        Types.Safe memory safe = safes[_safeId];
-        safe = Types.Safe({
+        safes[_safeId] = Types.Safe({
             safeId: _safeId,
             safeCreatedBy: msg.sender,
             safeCurrentOwner: msg.sender,
@@ -103,7 +102,6 @@ contract Safes {
             claimsCount: 0,
             safeFunds: msg.value
         });
-        safes[_safeId] = safe;
 
         safesCount += 1;
 
@@ -129,8 +127,7 @@ contract Safes {
 
         metaEvidenceID += 1;
 
-        Types.Safe memory safe = safes[_safeId];
-        safe = Types.Safe({
+        safes[_safeId] = Types.Safe({
             safeId: _safeId,
             safeCreatedBy: _creator,
             safeCurrentOwner: _creator,
@@ -139,7 +136,6 @@ contract Safes {
             claimsCount: 0,
             safeFunds: msg.value
         });
-        safes[_safeId] = safe;
 
         safesCount += 1;
 
