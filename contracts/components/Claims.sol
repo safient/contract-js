@@ -18,9 +18,9 @@ contract Claims {
         rulingOptions = 2;
     }
 
-    modifier claimCreationRequisite(
+    modifier klerosClaimCreationRequisite(
         string memory _safeId,
-        Types.claimCreationRequisiteData memory data
+        Types.klerosClaimCreationRequisiteData memory data
     ) {
         require(data.safeCurrentOwner != address(0), "Safe does not exist");
         require(
@@ -43,6 +43,7 @@ contract Claims {
         string calldata _evidence
     ) {
         require(_disputeID <= claimsCount, "Claim or Dispute does not exist");
+        require(bytes(_evidence).length > 1, "Should provide evidence URI");
         Types.Claim memory claim = claims[_disputeID];
         require(
             msg.sender == claim.claimedBy,
@@ -81,11 +82,11 @@ contract Claims {
         return true;
     }
 
-    function _createClaim(
+    function _createKlerosCourtClaim(
         string memory _safeId,
         string calldata _evidence,
-        Types.claimCreationRequisiteData memory data
-    ) internal claimCreationRequisite(_safeId, data) returns (uint256) {
+        Types.klerosClaimCreationRequisiteData memory data
+    ) internal klerosClaimCreationRequisite(_safeId, data) returns (uint256) {
         uint256 disputeID = data.arbitrator.createDispute{
             value: data.arbitrationCost
         }(rulingOptions, "");
@@ -100,6 +101,7 @@ contract Claims {
         );
 
         claims[disputeID] = Types.Claim({
+            claimType: Types.ClaimType.KlerosCourt,
             disputeId: disputeID,
             claimedBy: msg.sender,
             metaEvidenceId: data.metaEvidenceId,
@@ -117,6 +119,22 @@ contract Claims {
         }
 
         return disputeID;
+    }
+
+    function _createSignalBasedClaim(string memory _safeId) internal {
+        claimsCount += 1;
+
+        claims[claimsCount] = Types.Claim({
+            claimType: Types.ClaimType.SignalBased,
+            disputeId: claimsCount,
+            claimedBy: msg.sender,
+            metaEvidenceId: 0,
+            evidenceGroupId: 0,
+            status: Types.ClaimStatus.Active,
+            result: "Active"
+        });
+
+        emit Events.CreateClaim(msg.sender, _safeId, claimsCount);
     }
 
     function _rule(

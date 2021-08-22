@@ -2,11 +2,13 @@
 pragma solidity >=0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "hardhat/console.sol";
 import "./components/Safes.sol";
 import "./components/Claims.sol";
 import "./components/Guardians.sol";
 import "./interfaces/IArbitrator.sol";
 import "./interfaces/IArbitrable.sol";
+import "./libraries/Types.sol";
 
 contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     IArbitrator public arbitrator;
@@ -26,12 +28,16 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     function createSafe(
         address _beneficiary,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
             _createSafeByCreator(
                 _beneficiary,
                 _safeId,
+                _claimType,
+                _signalingPeriod,
                 _metaEvidence,
                 arbitrator
             );
@@ -40,12 +46,16 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     function syncSafe(
         address _creator,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
             _createSafeByBeneficiary(
                 _creator,
                 _safeId,
+                _claimType,
+                _signalingPeriod,
                 _metaEvidence,
                 arbitrator
             );
@@ -58,24 +68,48 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        uint256 arbitrationCost = arbitrator.arbitrationCost("");
+        if (safe.claimType == Types.ClaimType.KlerosCourt) {
+            uint256 arbitrationCost = arbitrator.arbitrationCost("");
 
-        Types.claimCreationRequisiteData memory data = Types
-            .claimCreationRequisiteData(
-                arbitrator,
-                arbitrationCost,
-                safe.metaEvidenceId,
-                safe.safeCurrentOwner,
-                safe.safeBeneficiary,
-                safe.safeFunds
+            Types.klerosClaimCreationRequisiteData memory data = Types
+                .klerosClaimCreationRequisiteData(
+                    arbitrator,
+                    arbitrationCost,
+                    safe.metaEvidenceId,
+                    safe.safeCurrentOwner,
+                    safe.safeBeneficiary,
+                    safe.safeFunds
+                );
+
+            _createKlerosCourtClaim(_safeId, _evidence, data);
+
+            safe.claimsCount += 1;
+            safe.safeFunds -= arbitrationCost;
+            safes[_safeId] = safe;
+        } else if (safe.claimType == Types.ClaimType.SignalBased) {
+            require(safe.safeCurrentOwner != address(0), "Safe does not exist");
+            require(
+                bytes(_safeId).length > 1,
+                "Should provide ID of the safe on threadDB"
             );
+            require(
+                msg.sender == safe.safeBeneficiary,
+                "Only beneficiary of the safe can create the claim"
+            );
+            require(safe.startSignalTime == 0);
+            require(safe.endSignalTime == 0);
+            require(safe.latestSignalTime == 0);
 
-        _createClaim(_safeId, _evidence, data);
+            safe.startSignalTime = block.timestamp;
+            safe.endSignalTime =
+                safe.startSignalTime +
+                (6 * safe.signalingPeriod);
 
-        safe.claimsCount += 1;
-        safe.safeFunds -= arbitrationCost;
+            _createSignalBasedClaim(_safeId);
 
-        safes[_safeId] = safe;
+            safe.claimsCount += 1;
+            safes[_safeId] = safe;
+        }
 
         return true;
     }
@@ -101,6 +135,41 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
     function retrieveSafeFunds(string memory _safeId) external returns (bool) {
         return _retrieveSafeFunds(_safeId);
+    }
+
+    function sendSignal(string memory _safeId) external returns (bool) {
+        return _sendSignal(_safeId);
+    }
+
+    function getClaimStatus(string memory _safeId, uint256 _disputeID)
+        external
+        view
+        returns (Types.ClaimStatus status)
+    {
+        Types.Safe memory safe = safes[_safeId];
+
+        if (safe.claimType == Types.ClaimType.KlerosCourt) {
+            Types.Claim memory claim = claims[_disputeID];
+
+            return claim.status;
+        } else if (safe.claimType == Types.ClaimType.SignalBased) {
+            if (
+                safe.latestSignalTime == 0 &&
+                block.timestamp < safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Active;
+            } else if (
+                safe.latestSignalTime == 0 &&
+                block.timestamp > safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Passed;
+            } else if (
+                safe.latestSignalTime > 0 &&
+                safe.latestSignalTime < safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Failed;
+            }
+        }
     }
 
     function guardianProof(

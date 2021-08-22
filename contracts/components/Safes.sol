@@ -25,14 +25,6 @@ contract Safes {
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
-        require(
-            msg.value >= arbitrator.arbitrationCost(""),
-            "Inadequate fee payment"
-        );
-        require(
-            bytes(_metaEvidence).length > 0,
-            "Should provide metaEvidence to create a safe"
-        );
         _;
     }
 
@@ -80,6 +72,8 @@ contract Safes {
     function _createSafeByCreator(
         address _beneficiary,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence,
         IArbitrator arbitrator
     )
@@ -98,6 +92,11 @@ contract Safes {
             safeCreatedBy: msg.sender,
             safeCurrentOwner: msg.sender,
             safeBeneficiary: _beneficiary,
+            signalingPeriod: _signalingPeriod,
+            startSignalTime: 0,
+            endSignalTime: 0,
+            latestSignalTime: 0,
+            claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
             safeFunds: msg.value
@@ -114,6 +113,8 @@ contract Safes {
     function _createSafeByBeneficiary(
         address _creator,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence,
         IArbitrator arbitrator
     )
@@ -132,6 +133,11 @@ contract Safes {
             safeCreatedBy: _creator,
             safeCurrentOwner: _creator,
             safeBeneficiary: msg.sender,
+            signalingPeriod: _signalingPeriod,
+            startSignalTime: 0,
+            endSignalTime: 0,
+            latestSignalTime: 0,
+            claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
             safeFunds: msg.value
@@ -173,6 +179,19 @@ contract Safes {
         require(sent, "Failed to send Ether");
 
         safe.safeFunds = 0;
+        safes[_safeId] = safe;
+
+        return true;
+    }
+
+    function _sendSignal(string memory _safeId) internal returns (bool) {
+        Types.Safe memory safe = safes[_safeId];
+
+        require(msg.sender == safe.safeCurrentOwner);
+        require(block.timestamp < safe.endSignalTime);
+        require(safe.latestSignalTime == 0);
+
+        safe.latestSignalTime = block.timestamp;
         safes[_safeId] = safe;
 
         return true;

@@ -11,17 +11,28 @@ library Types {
         Refused
     }
 
+    enum ClaimType {
+        SignalBased,
+        KlerosCourt
+    }
+
     struct Safe {
         string safeId;
         address safeCreatedBy;
         address safeCurrentOwner;
         address safeBeneficiary;
+        uint256 signalingPeriod;
+        uint256 startSignalTime;
+        uint256 endSignalTime;
+        uint256 latestSignalTime;
+        ClaimType claimType;
         uint256 metaEvidenceId;
         uint256 claimsCount;
         uint256 safeFunds;
     }
 
     struct Claim {
+        ClaimType claimType;
         uint256 disputeId;
         address claimedBy;
         uint256 metaEvidenceId;
@@ -35,7 +46,7 @@ library Types {
         address guardianAddress;
     }
 
-    struct claimCreationRequisiteData {
+    struct klerosClaimCreationRequisiteData {
         IArbitrator arbitrator;
         uint256 arbitrationCost;
         uint256 metaEvidenceId;
