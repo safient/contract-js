@@ -6,7 +6,7 @@ import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
 import "../libraries/Events.sol";
 
-contract Claims {
+contract Claims is Events {
     uint256 public claimsCount;
     uint256 public evidenceGroupID;
     uint256 public rulingOptions;
@@ -71,7 +71,7 @@ contract Claims {
     ) internal submitEvidenceRequisite(_disputeID, _evidence) returns (bool) {
         Types.Claim memory claim = claims[_disputeID];
 
-        emit Events.Evidence(
+        emit Evidence(
             arbitrator,
             claim.evidenceGroupId,
             msg.sender,
@@ -92,7 +92,7 @@ contract Claims {
 
         evidenceGroupID += 1;
 
-        emit Events.Dispute(
+        emit Dispute(
             data.arbitrator,
             disputeID,
             data.metaEvidenceId,
@@ -110,7 +110,7 @@ contract Claims {
 
         claimsCount += 1;
 
-        emit Events.CreateClaim(msg.sender, _safeId, disputeID);
+        emit CreateClaim(msg.sender, _safeId, disputeID);
 
         if (bytes(_evidence).length != 0) {
             _submitEvidence(disputeID, _evidence, data.arbitrator);
@@ -139,6 +139,6 @@ contract Claims {
 
         claims[_disputeID] = claim;
 
-        emit Events.Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
+        emit ClaimRuling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 }

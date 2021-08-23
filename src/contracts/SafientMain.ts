@@ -96,11 +96,11 @@ export class SafientMain {
    * @param evidenceURI - IPFS URI pointing to the evidence submitted by the claim creator
    * @returns A transaction response
    */
-  createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<TransactionResponse> => {
+  createClaim = async (safeIdOnThreadDB: string, evidenceURI: string): Promise<any> => {
     try {
       const contract: Contract = await this.getContractInstance();
-      this.tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
-      return this.tx;
+      const res = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
+      return res;
     } catch (e) {
       this.logger.throwError(e.message);
     }

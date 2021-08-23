@@ -3,9 +3,9 @@ pragma solidity >=0.7.0;
 
 import "../interfaces/IArbitrator.sol";
 
-library Events {
+contract Events {
     // IArbitrable
-    event Ruling(
+    event ClaimRuling(
         IArbitrator indexed _arbitrator,
         uint256 indexed _disputeID,
         uint256 _ruling

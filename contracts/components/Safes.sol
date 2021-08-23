@@ -6,7 +6,7 @@ import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
 import "../libraries/Events.sol";
 
-contract Safes {
+contract Safes is Events {
     uint256 public safesCount;
     uint256 public metaEvidenceID;
     mapping(string => Types.Safe) public safes;
@@ -105,8 +105,8 @@ contract Safes {
 
         safesCount += 1;
 
-        emit Events.MetaEvidence(metaEvidenceID, _metaEvidence);
-        emit Events.CreateSafe(msg.sender, _beneficiary, metaEvidenceID);
+        emit MetaEvidence(metaEvidenceID, _metaEvidence);
+        emit CreateSafe(msg.sender, _beneficiary, metaEvidenceID);
 
         return true;
     }
@@ -139,8 +139,8 @@ contract Safes {
 
         safesCount += 1;
 
-        emit Events.MetaEvidence(metaEvidenceID, _metaEvidence);
-        emit Events.CreateSafe(_creator, msg.sender, metaEvidenceID);
+        emit MetaEvidence(metaEvidenceID, _metaEvidence);
+        emit CreateSafe(_creator, msg.sender, metaEvidenceID);
 
         return true;
     }
