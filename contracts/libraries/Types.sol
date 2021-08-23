@@ -22,7 +22,6 @@ library Types {
         address safeCurrentOwner;
         address safeBeneficiary;
         uint256 signalingPeriod;
-        uint256 startSignalTime;
         uint256 endSignalTime;
         uint256 latestSignalTime;
         ClaimType claimType;

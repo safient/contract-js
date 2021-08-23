@@ -87,15 +87,13 @@ describe('SafientMain', async () => {
     });
 
     it('Should allow safe beneficiaries to create a safe (syncSafe)', async () => {
-      const arbitrationFee = await autoAppealableArbitrator.arbitrationCost(123); // 0.001 eth
-
       // SUCCESS : create a safe(for claimType - SignalBased & signal - won't signal)
       await safientMain.connect(beneficiary).syncSafe(
         safeCreator.address,
         safeId2,
         0,
         1, // 6 seconds (6 * 1) because opting SignalBased
-        ''
+        '' // no metaevidence because SignalBased
       );
 
       expect(await safientMain.safesCount()).to.equal(2);
@@ -190,14 +188,6 @@ describe('SafientMain', async () => {
     });
 
     it('Should allow beneficiaries to create a claim (SignalBased)', async () => {
-      // FAILURE : safe does not exist
-      await expect(safientMain.connect(beneficiary).createClaim('123', '')).to.be.revertedWith('Safe does not exist');
-
-      // FAILURE : only beneficiary of the safe can create the claim
-      await expect(safientMain.connect(accountX).createClaim(safeId2, '')).to.be.revertedWith(
-        'Only beneficiary of the safe can create the claim'
-      );
-
       // SUCCESS : create claim on safeId2
       await safientMain.connect(beneficiary).createClaim(safeId2, '');
       const safe2 = await safientMain.safes(safeId2);
@@ -229,7 +219,7 @@ describe('SafientMain', async () => {
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(ethers.provider.send('evm_mine'));
-        }, 6000);
+        }, 7000);
       });
       const result = await mineNewBlock;
     });

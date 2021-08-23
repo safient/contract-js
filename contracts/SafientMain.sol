@@ -38,8 +38,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _safeId,
                 _claimType,
                 _signalingPeriod,
-                _metaEvidence,
-                arbitrator
+                _metaEvidence
             );
     }
 
@@ -56,8 +55,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _safeId,
                 _claimType,
                 _signalingPeriod,
-                _metaEvidence,
-                arbitrator
+                _metaEvidence
             );
     }
 
@@ -96,14 +94,10 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 msg.sender == safe.safeBeneficiary,
                 "Only beneficiary of the safe can create the claim"
             );
-            require(safe.startSignalTime == 0);
             require(safe.endSignalTime == 0);
             require(safe.latestSignalTime == 0);
 
-            safe.startSignalTime = block.timestamp;
-            safe.endSignalTime =
-                safe.startSignalTime +
-                (6 * safe.signalingPeriod);
+            safe.endSignalTime = block.timestamp + (6 * safe.signalingPeriod);
 
             _createSignalBasedClaim(_safeId);
 
