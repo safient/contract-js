@@ -11,18 +11,11 @@ import "./interfaces/IArbitrable.sol";
 contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     IArbitrator public arbitrator;
     address public safientMainAdmin;
-    uint256 disputeId;
 
     constructor(IArbitrator _arbitrator) {
         arbitrator = _arbitrator;
         safientMainAdmin = msg.sender;
     }
-
-    // event CreateClaim(
-    //     address indexed claimCreatedBy,
-    //     string indexed safeId,
-    //     uint256 indexed disputeId
-    // );
 
     receive() external payable {}
 
@@ -77,7 +70,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 safe.safeFunds
             );
 
-        disputeId = _createClaim(_safeId, _evidence, data);
+        _createClaim(_safeId, _evidence, data);
 
         safe.claimsCount += 1;
         safe.safeFunds -= arbitrationCost;
