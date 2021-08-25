@@ -2,6 +2,7 @@ node_modules
 dist
 
 artifacts
+!src/artifacts
 cache
 
 # local env files
