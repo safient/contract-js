@@ -6,7 +6,7 @@ import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
 import "../libraries/Events.sol";
 
-contract Safes {
+contract Safes is Events {
     uint256 public safesCount;
     uint256 public metaEvidenceID;
     mapping(string => Types.Safe) public safes;
