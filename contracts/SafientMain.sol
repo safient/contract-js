@@ -76,7 +76,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         safe.safeFunds -= arbitrationCost;
 
         safes[_safeId] = safe;
-
+        
         return true;
     }
 
@@ -109,7 +109,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         Types.RecoveryProof[] memory _guardianproof,
         string[] memory _secrets,
         string memory _safeId
-    ) internal returns (bool) {
+    ) external returns (bool) {
         Types.Safe memory safe = safes[_safeId];
         return
             _guardianProof(
