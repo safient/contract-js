@@ -52,7 +52,7 @@ describe('safientMain', async () => {
         beneficiaryAddress, // 2nd account
         safeId1OnThreadDB,
         1,
-        0, // 0 seconds (6 * 0) because opting KlerosCourt
+        0, // 0 seconds (6 * 0) because opting ArbitrationBased
         metaevidenceOrEvidenceURI,
         String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
       );
@@ -61,12 +61,12 @@ describe('safientMain', async () => {
       expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
 
       const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
-      expect(safe.safeBeneficiary).to.equal(beneficiaryAddress);
-      expect(ethers.utils.formatEther(safe.safeFunds)).to.equal('0.011');
+      expect(safe.beneficiary).to.equal(beneficiaryAddress);
+      expect(ethers.utils.formatEther(safe.funds)).to.equal('0.011');
       expect(Number(safe.signalingPeriod)).to.equal(0); // 0 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
-      expect(Number(safe.claimType)).to.equal(1); // klerosCourt
+      expect(Number(safe.claimType)).to.equal(1); // ArbitrationBased
 
       // FAILURE : ID of the safe on threadDB is not passed
       await expect(
@@ -98,7 +98,7 @@ describe('safientMain', async () => {
           safeCreatorAddress,
           safeId1OnThreadDB,
           1,
-          0, // 0 seconds (6 * 0) because opting KlerosCourt
+          0, // 0 seconds (6 * 0) because opting ArbitrationBased
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
         )
@@ -122,8 +122,8 @@ describe('safientMain', async () => {
       expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
 
       const safe = await sc.safientMain.getSafeBySafeId(safeId2OnThreadDB);
-      expect(safe.safeCreatedBy).to.equal(safeCreatorAddress);
-      expect(safe.safeBeneficiary).to.equal(beneficiaryAddress);
+      expect(safe.createdBy).to.equal(safeCreatorAddress);
+      expect(safe.beneficiary).to.equal(beneficiaryAddress);
       expect(Number(safe.signalingPeriod)).to.equal(1); // 6 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
@@ -141,7 +141,7 @@ describe('safientMain', async () => {
       );
     });
 
-    it('Should allow beneficiaries to create a claim (KlerosCourt)', async () => {
+    it('Should allow beneficiaries to create a claim (ArbitrationBased)', async () => {
       let sc;
       sc = new SafientClaims(accountXSigner, chainId);
 
@@ -153,7 +153,7 @@ describe('safientMain', async () => {
       // FAILURE : safe does not exist
       await expect(sc.safientMain.createClaim('123', metaevidenceOrEvidenceURI)).to.be.rejectedWith(Error);
 
-      // SUCCESS : create a claim (KlerosCourt) on safeId1
+      // SUCCESS : create a claim (ArbitrationBased) on safeId1
       await sc.safientMain.createClaim(safeId1OnThreadDB, metaevidenceOrEvidenceURI);
 
       expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(1);
@@ -162,7 +162,6 @@ describe('safientMain', async () => {
       const claim1 = await sc.safientMain.getClaimByClaimId(0);
       expect(claim1.disputeId).to.equal(0);
       expect(claim1.claimedBy).to.equal(beneficiaryAddress);
-      expect(claim1.result).to.equal('Active');
     });
 
     it('Should allow beneficiaries to create a claim (SignalBased)', async () => {
@@ -175,7 +174,6 @@ describe('safientMain', async () => {
       const claimOnSafeId2 = await sc.safientMain.getClaimByClaimId(2);
       expect(claimOnSafeId2.disputeId).to.equal(2);
       expect(claimOnSafeId2.claimedBy).to.equal(beneficiaryAddress);
-      expect(claimOnSafeId2.result).to.equal('Active');
 
       // SUCCESS : create claim on safeId3
       await sc.safientMain.createClaim(safeId3OnThreadDB, '');
@@ -184,7 +182,6 @@ describe('safientMain', async () => {
       const claimOnSafeId3 = await sc.safientMain.getClaimByClaimId(3);
       expect(claimOnSafeId3.disputeId).to.equal(3);
       expect(claimOnSafeId3.claimedBy).to.equal(beneficiaryAddress);
-      expect(claimOnSafeId3.result).to.equal('Active');
     });
 
     it('Should allow safe creator to SIGNAL when the safe is claimed', async () => {
@@ -195,20 +192,16 @@ describe('safientMain', async () => {
 
       const safeWithSafeId3 = await sc.safientMain.getSafeBySafeId(safeId3OnThreadDB);
       expect(Number(safeWithSafeId3.latestSignalTime)).greaterThan(0);
-    });
 
-    it('Mine a new block after 6 seconds', async () => {
+      // mine a new block after 6 seconds
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(provider.send('evm_mine'));
         }, 7000);
       });
       const result = await mineNewBlock;
-    });
 
-    it('Should allow users to get claim status', async () => {
-      const sc = new SafientClaims(accountXSigner, chainId);
-
+      // check claim status (ArbitrationBased & SignalBased)
       const safeId1ClaimResult = await sc.safientMain.getClaimStatus(safeId1OnThreadDB, 0);
       expect(safeId1ClaimResult).to.equal(0); // claim is Active (Kleros has not given a ruling yet)
 
@@ -262,9 +255,9 @@ describe('safientMain', async () => {
       const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
 
       expect(safe.safeId).to.equal(safeId1OnThreadDB);
-      expect(safe.safeCreatedBy).to.equal(safeCreatorAddress);
+      expect(safe.createdBy).to.equal(safeCreatorAddress);
       expect(safe.claimsCount).to.equal(1);
-      expect(safe.safeFunds).to.equal(0);
+      expect(safe.funds).to.equal(0);
     });
 
     it('Should get the claim by its Claim Id', async () => {

@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
-import "../libraries/Events.sol";
 
 contract Claims {
     uint256 public claimsCount;
@@ -18,21 +17,21 @@ contract Claims {
         rulingOptions = 2;
     }
 
-    modifier klerosClaimCreationRequisite(
+    modifier arbitrationBasedClaimCreationRequisite(
         string memory _safeId,
-        Types.klerosClaimCreationRequisiteData memory data
+        Types.ArbitrationBasedClaimCreationRequisiteData memory data
     ) {
-        require(data.safeCurrentOwner != address(0), "Safe does not exist");
+        require(data.currentOwner != address(0), "Safe does not exist");
         require(
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
         require(
-            msg.sender == data.safeBeneficiary,
+            msg.sender == data.beneficiary,
             "Only beneficiary of the safe can create the claim"
         );
         require(
-            data.safeFunds >= data.arbitrationCost,
+            data.funds >= data.arbitrationCost,
             "Insufficient funds in the safe to pay the arbitration fee"
         );
         _;
@@ -65,6 +64,26 @@ contract Claims {
         _;
     }
 
+    event Evidence(
+        IArbitrator indexed _arbitrator,
+        uint256 indexed _evidenceGroupID,
+        address indexed _party,
+        string _evidence
+    );
+
+    event Dispute(
+        IArbitrator indexed _arbitrator,
+        uint256 indexed _disputeID,
+        uint256 _metaEvidenceID,
+        uint256 _evidenceGroupID
+    );
+
+    event CreateClaim(
+        address indexed createdBy,
+        string indexed safeId,
+        uint256 indexed disputeId
+    );
+
     function _submitEvidence(
         uint256 _disputeID,
         string calldata _evidence,
@@ -72,28 +91,27 @@ contract Claims {
     ) internal submitEvidenceRequisite(_disputeID, _evidence) returns (bool) {
         Types.Claim memory claim = claims[_disputeID];
 
-        emit Events.Evidence(
-            arbitrator,
-            claim.evidenceGroupId,
-            msg.sender,
-            _evidence
-        );
+        emit Evidence(arbitrator, claim.evidenceGroupId, msg.sender, _evidence);
 
         return true;
     }
 
-    function _createKlerosCourtClaim(
+    function _createArbitrationBasedClaim(
         string memory _safeId,
         string calldata _evidence,
-        Types.klerosClaimCreationRequisiteData memory data
-    ) internal klerosClaimCreationRequisite(_safeId, data) returns (uint256) {
+        Types.ArbitrationBasedClaimCreationRequisiteData memory data
+    )
+        internal
+        arbitrationBasedClaimCreationRequisite(_safeId, data)
+        returns (uint256)
+    {
         uint256 disputeID = data.arbitrator.createDispute{
             value: data.arbitrationCost
         }(rulingOptions, "");
 
         evidenceGroupID += 1;
 
-        emit Events.Dispute(
+        emit Dispute(
             data.arbitrator,
             disputeID,
             data.metaEvidenceId,
@@ -101,18 +119,17 @@ contract Claims {
         );
 
         claims[disputeID] = Types.Claim({
-            claimType: Types.ClaimType.KlerosCourt,
+            claimType: Types.ClaimType.ArbitrationBased,
             disputeId: disputeID,
             claimedBy: msg.sender,
             metaEvidenceId: data.metaEvidenceId,
             evidenceGroupId: evidenceGroupID,
-            status: Types.ClaimStatus.Active,
-            result: "Active"
+            status: Types.ClaimStatus.Active
         });
 
         claimsCount += 1;
 
-        emit Events.CreateClaim(msg.sender, _safeId, disputeID);
+        emit CreateClaim(msg.sender, _safeId, disputeID);
 
         if (bytes(_evidence).length != 0) {
             _submitEvidence(disputeID, _evidence, data.arbitrator);
@@ -130,11 +147,10 @@ contract Claims {
             claimedBy: msg.sender,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
-            status: Types.ClaimStatus.Active,
-            result: "Active"
+            status: Types.ClaimStatus.Active
         });
 
-        emit Events.CreateClaim(msg.sender, _safeId, claimsCount);
+        emit CreateClaim(msg.sender, _safeId, claimsCount);
     }
 
     function _rule(
@@ -146,17 +162,12 @@ contract Claims {
 
         if (_ruling == 1) {
             claim.status = Types.ClaimStatus.Passed; // 1
-            claim.result = "Passed";
         } else if (_ruling == 2) {
             claim.status = Types.ClaimStatus.Failed; // 2
-            claim.result = "Failed";
         } else if (_ruling == 0) {
             claim.status = Types.ClaimStatus.Refused; // 3
-            claim.result = "RTA"; // Refused To Arbitrate (RTA)
         }
 
         claims[_disputeID] = claim;
-
-        emit Events.Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 }

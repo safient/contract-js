@@ -33,5 +33,5 @@ export type RecoveryProof = {
 
 export enum ClaimType {
   SignalBased,
-  KlerosCourt,
+  ArbitrationBased
 }

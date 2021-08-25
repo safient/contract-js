@@ -6,7 +6,7 @@ use(solidity);
 
 describe('SafientMain', async () => {
   let autoAppealableArbitrator, claims, safientMain, safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX;
-  const safeId1 = '01234567890'; // KlerosCourt claim
+  const safeId1 = '01234567890'; // ArbitrationBased claim
   const safeId2 = '01234567891'; // SignalBased claim (owner won't signal)
   const safeId3 = '01234567892'; // SignalBased claim (owner will signal)
 
@@ -34,7 +34,7 @@ describe('SafientMain', async () => {
         beneficiary.address,
         safeId1,
         1,
-        0, // 0 seconds (6 * 0) because opting KlerosCourt
+        0, // 0 seconds (6 * 0) because opting ArbitrationBased
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
         {
           value: arbitrationFee.toNumber() + ethers.utils.parseEther('0.001').toNumber(),
@@ -45,13 +45,13 @@ describe('SafientMain', async () => {
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
 
       const safe = await safientMain.safes(safeId1);
-      expect(safe.safeCreatedBy).to.equal(safeCreator.address);
-      expect(safe.safeBeneficiary).to.equal(beneficiary.address);
-      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
+      expect(safe.createdBy).to.equal(safeCreator.address);
+      expect(safe.beneficiary).to.equal(beneficiary.address);
+      expect(safe.funds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
       expect(Number(safe.signalingPeriod)).to.equal(0); // 0 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
-      expect(Number(safe.claimType)).to.equal(1); // klerosCourt
+      expect(Number(safe.claimType)).to.equal(1); // ArbitrationBased
 
       // FAILURE : beneficiary is an zero address
       await expect(
@@ -99,8 +99,8 @@ describe('SafientMain', async () => {
       expect(await safientMain.safesCount()).to.equal(2);
 
       const safe = await safientMain.safes(safeId2);
-      expect(safe.safeCreatedBy).to.equal(safeCreator.address);
-      expect(safe.safeBeneficiary).to.equal(beneficiary.address);
+      expect(safe.createdBy).to.equal(safeCreator.address);
+      expect(safe.beneficiary).to.equal(beneficiary.address);
       expect(Number(safe.signalingPeriod)).to.equal(1); // 6 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
@@ -120,7 +120,7 @@ describe('SafientMain', async () => {
       await safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId3, 0, 1, '');
     });
 
-    it('Should allow beneficiaries to create a claim (KlerosCourt)', async () => {
+    it('Should allow beneficiaries to create a claim (ArbitrationBased)', async () => {
       // FAILURE : safe does not exist
       await expect(
         safientMain
@@ -141,7 +141,7 @@ describe('SafientMain', async () => {
           )
       ).to.be.revertedWith('Only beneficiary of the safe can create the claim');
 
-      // SUCCESS : create a claim (KlerosCourt) on safeId1
+      // SUCCESS : create a claim (ArbitrationBased) on safeId1
       await safientMain.connect(beneficiary).createClaim(
         safeId1,
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
@@ -151,15 +151,14 @@ describe('SafientMain', async () => {
 
       let safe;
       safe = await safientMain.safes(safeId1);
-      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('0.001')); // 0.001 eth
+      expect(safe.funds).to.equal(ethers.utils.parseEther('0.001')); // 0.001 eth
       expect(safe.claimsCount).to.equal(1);
 
       const claim1 = await safientMain.claims(0);
       expect(claim1.disputeId).to.equal(0);
       expect(claim1.claimedBy).to.equal(beneficiary.address);
-      expect(claim1.result).to.equal('Active');
 
-      // SUCCESS : create 2nd claim (KlerosCourt) on the same safeId1
+      // SUCCESS : create 2nd claim (ArbitrationBased) on the same safeId1
       await safientMain.connect(beneficiary).createClaim(
         safeId1,
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/' // evidence
@@ -168,13 +167,12 @@ describe('SafientMain', async () => {
       expect(await safientMain.getSafientMainContractBalance()).to.equal(0); // 0 eth
 
       safe = await safientMain.safes(safeId1);
-      expect(safe.safeFunds).to.equal(0); // 0 eth
+      expect(safe.funds).to.equal(0); // 0 eth
       expect(safe.claimsCount).to.equal(2);
 
       const claim2 = await safientMain.claims(1);
       expect(claim2.disputeId).to.equal(1);
       expect(claim2.claimedBy).to.equal(beneficiary.address);
-      expect(claim2.result).to.equal('Active');
 
       // FAILURE : insufficient funds in the safe to pay the arbitration fee
       await expect(
@@ -195,7 +193,6 @@ describe('SafientMain', async () => {
       const claim2 = await safientMain.claims(3);
       expect(claim2.disputeId).to.equal(3);
       expect(claim2.claimedBy).to.equal(beneficiary.address);
-      expect(claim2.result).to.equal('Active');
 
       // SUCCESS : create claim on safeId3
       await safientMain.connect(beneficiary).createClaim(safeId3, '');
@@ -204,7 +201,6 @@ describe('SafientMain', async () => {
       const claim3 = await safientMain.claims(4);
       expect(claim3.disputeId).to.equal(4);
       expect(claim3.claimedBy).to.equal(beneficiary.address);
-      expect(claim3.result).to.equal('Active');
     });
 
     it('Should allow safe creator to SIGNAL when the safe is claimed', async () => {
@@ -213,18 +209,16 @@ describe('SafientMain', async () => {
 
       const safe3 = await safientMain.safes(safeId3);
       expect(Number(safe3.latestSignalTime)).greaterThan(0);
-    });
 
-    it('Mine a new block after 6 seconds', async () => {
+      // mine a new block after 6 seconds
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(ethers.provider.send('evm_mine'));
         }, 7000);
       });
       const result = await mineNewBlock;
-    });
 
-    it('Should allow users to get claim status', async () => {
+      // check claim status (ArbitrationBased & SignalBased)
       const safeId1ClaimResult = await safientMain.connect(accountX).getClaimStatus(safeId1, 0);
       expect(safeId1ClaimResult).to.equal(0); // claim is Active (Kleros has not given a ruling yet)
 
@@ -250,7 +244,6 @@ describe('SafientMain', async () => {
       await autoAppealableArbitrator.connect(safientMainAdminAndArbitrator).giveRuling(0, 2);
 
       const claim1 = await safientMain.claims(0);
-      expect(claim1.result).to.equal('Failed'); // Failed
 
       const safeId1Claim1Result1 = await safientMain.connect(accountX).getClaimStatus(safeId1, 0);
       expect(safeId1Claim1Result1).to.equal(2); // claim is Failed (Kleros has failed the claim)
@@ -259,7 +252,6 @@ describe('SafientMain', async () => {
       await autoAppealableArbitrator.connect(safientMainAdminAndArbitrator).giveRuling(1, 0);
 
       const claim2 = await safientMain.claims(1);
-      expect(claim2.result).to.equal('RTA'); // Refused To Arbitrate (RTA)
 
       const safeId1Claim2Result1 = await safientMain.connect(accountX).getClaimStatus(safeId1, 1);
       expect(safeId1Claim2Result1).to.equal(3); // claim is Refused (Kleros has refused the claim)
@@ -275,7 +267,7 @@ describe('SafientMain', async () => {
       await safientMain.connect(accountX).depositSafeFunds(safeId1, { value: ethers.utils.parseEther('2') }); // 2 eth
 
       const safe = await safientMain.safes(safeId1);
-      expect(safe.safeFunds).to.equal(ethers.utils.parseEther('2')); // 2 eth
+      expect(safe.funds).to.equal(ethers.utils.parseEther('2')); // 2 eth
       expect(await safientMain.getSafientMainContractBalance()).to.equal(ethers.utils.parseEther('2')); // 2.002 eth
     });
 

@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
-import "../libraries/Events.sol";
 
 contract Safes {
     uint256 public safesCount;
@@ -56,20 +55,28 @@ contract Safes {
 
     modifier depositSafeFundsRequisite(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
-        require(safe.safeCurrentOwner != address(0), "Safe does not exist");
+        require(safe.currentOwner != address(0), "Safe does not exist");
         _;
     }
 
     modifier retrieveSafeFundsRequisite(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
-        require(safe.safeCurrentOwner != address(0), "Safe does not exist");
+        require(safe.currentOwner != address(0), "Safe does not exist");
         require(
-            msg.sender == safe.safeCurrentOwner,
+            msg.sender == safe.currentOwner,
             "Only safe owner can retrieve the deposit balance"
         );
-        require(safe.safeFunds != 0, "No funds remaining in the safe");
+        require(safe.funds != 0, "No funds remaining in the safe");
         _;
     }
+
+    event MetaEvidence(uint256 indexed _metaEvidenceID, string _evidence);
+
+    event CreateSafe(
+        address indexed createdBy,
+        address indexed beneficiary,
+        uint256 indexed metaEvidenceId
+    );
 
     function _createSafeByCreator(
         address _beneficiary,
@@ -85,30 +92,30 @@ contract Safes {
         (bool sent, ) = address(this).call{value: msg.value}("");
         require(sent, "Failed to send Ether");
 
-        if (_claimType == Types.ClaimType.KlerosCourt) {
+        if (_claimType == Types.ClaimType.ArbitrationBased) {
             metaEvidenceID += 1;
         }
 
         safes[_safeId] = Types.Safe({
             safeId: _safeId,
-            safeCreatedBy: msg.sender,
-            safeCurrentOwner: msg.sender,
-            safeBeneficiary: _beneficiary,
+            createdBy: msg.sender,
+            currentOwner: msg.sender,
+            beneficiary: _beneficiary,
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
-            safeFunds: msg.value
+            funds: msg.value
         });
 
         safesCount += 1;
 
-        if (_claimType == Types.ClaimType.KlerosCourt) {
-            emit Events.MetaEvidence(metaEvidenceID, _metaEvidence);
+        if (_claimType == Types.ClaimType.ArbitrationBased) {
+            emit MetaEvidence(metaEvidenceID, _metaEvidence);
         }
-        emit Events.CreateSafe(msg.sender, _beneficiary, metaEvidenceID);
+        emit CreateSafe(msg.sender, _beneficiary, metaEvidenceID);
 
         return true;
     }
@@ -127,30 +134,30 @@ contract Safes {
         (bool sent, ) = address(this).call{value: msg.value}("");
         require(sent, "Failed to send Ether");
 
-        if (_claimType == Types.ClaimType.KlerosCourt) {
+        if (_claimType == Types.ClaimType.ArbitrationBased) {
             metaEvidenceID += 1;
         }
 
         safes[_safeId] = Types.Safe({
             safeId: _safeId,
-            safeCreatedBy: _creator,
-            safeCurrentOwner: _creator,
-            safeBeneficiary: msg.sender,
+            createdBy: _creator,
+            currentOwner: _creator,
+            beneficiary: msg.sender,
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
-            safeFunds: msg.value
+            funds: msg.value
         });
 
         safesCount += 1;
 
-        if (_claimType == Types.ClaimType.KlerosCourt) {
-            emit Events.MetaEvidence(metaEvidenceID, _metaEvidence);
+        if (_claimType == Types.ClaimType.ArbitrationBased) {
+            emit MetaEvidence(metaEvidenceID, _metaEvidence);
         }
-        emit Events.CreateSafe(_creator, msg.sender, metaEvidenceID);
+        emit CreateSafe(_creator, msg.sender, metaEvidenceID);
 
         return true;
     }
@@ -164,7 +171,7 @@ contract Safes {
         require(sent, "Failed to send Ether");
 
         Types.Safe memory safe = safes[_safeId];
-        safe.safeFunds += msg.value;
+        safe.funds += msg.value;
         safes[_safeId] = safe;
 
         return true;
@@ -179,10 +186,10 @@ contract Safes {
 
         address _to = msg.sender;
 
-        (bool sent, ) = _to.call{value: safe.safeFunds}("");
+        (bool sent, ) = _to.call{value: safe.funds}("");
         require(sent, "Failed to send Ether");
 
-        safe.safeFunds = 0;
+        safe.funds = 0;
         safes[_safeId] = safe;
 
         return true;
@@ -191,10 +198,22 @@ contract Safes {
     function _sendSignal(string memory _safeId) internal returns (bool) {
         Types.Safe memory safe = safes[_safeId];
 
-        require(msg.sender == safe.safeCurrentOwner);
-        require(safe.endSignalTime != 0);
-        require(block.timestamp < safe.endSignalTime);
-        require(safe.latestSignalTime == 0);
+        require(
+            msg.sender == safe.currentOwner,
+            "Only safe current owner can send the signal"
+        );
+        require(
+            safe.endSignalTime != 0,
+            "Safe is not claimed since safe end signal time is zero"
+        );
+        require(
+            block.timestamp < safe.endSignalTime,
+            "Signaling period is over"
+        );
+        require(
+            safe.latestSignalTime == 0,
+            "Safe is already signaled since latest signal time of safe is not zero"
+        );
 
         safe.latestSignalTime = block.timestamp;
         safes[_safeId] = safe;

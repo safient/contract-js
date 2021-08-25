@@ -402,7 +402,7 @@ const getClaimByClaimId = async (claimId) => {
 
 | Property          | Type        | Description                                                                    |
 | :---------------- | :---------- | :----------------------------------------------------------------------------- |
-| `claimType`       | `BigNumber` | Type of claim **0 - SignalBased**, **1 - KlerosCourt**                         |
+| `claimType`       | `BigNumber` | Type of claim **0 - SignalBased**, **1 - ArbitrationBased**                    |
 | `disputeId`       | `BigNumber` | Id of the dispute representing the claim                                       |
 | `claimedBy`       | `string`    | Address of the claim creator                                                   |
 | `metaEvidenceId`  | `BigNumber` | Id used to uniquely identify a piece of meta-evidence                          |

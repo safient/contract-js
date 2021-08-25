@@ -66,36 +66,42 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        if (safe.claimType == Types.ClaimType.KlerosCourt) {
+        if (safe.claimType == Types.ClaimType.ArbitrationBased) {
             uint256 arbitrationCost = arbitrator.arbitrationCost("");
 
-            Types.klerosClaimCreationRequisiteData memory data = Types
-                .klerosClaimCreationRequisiteData(
+            Types.ArbitrationBasedClaimCreationRequisiteData memory data = Types
+                .ArbitrationBasedClaimCreationRequisiteData(
                     arbitrator,
                     arbitrationCost,
                     safe.metaEvidenceId,
-                    safe.safeCurrentOwner,
-                    safe.safeBeneficiary,
-                    safe.safeFunds
+                    safe.currentOwner,
+                    safe.beneficiary,
+                    safe.funds
                 );
 
-            _createKlerosCourtClaim(_safeId, _evidence, data);
+            _createArbitrationBasedClaim(_safeId, _evidence, data);
 
             safe.claimsCount += 1;
-            safe.safeFunds -= arbitrationCost;
+            safe.funds -= arbitrationCost;
             safes[_safeId] = safe;
         } else if (safe.claimType == Types.ClaimType.SignalBased) {
-            require(safe.safeCurrentOwner != address(0), "Safe does not exist");
+            require(safe.currentOwner != address(0), "Safe does not exist");
             require(
                 bytes(_safeId).length > 1,
                 "Should provide ID of the safe on threadDB"
             );
             require(
-                msg.sender == safe.safeBeneficiary,
+                msg.sender == safe.beneficiary,
                 "Only beneficiary of the safe can create the claim"
             );
-            require(safe.endSignalTime == 0);
-            require(safe.latestSignalTime == 0);
+            require(
+                safe.endSignalTime == 0,
+                "Safe end signal time should be zero"
+            );
+            require(
+                safe.latestSignalTime == 0,
+                "Safe latest signal time should be zero"
+            );
 
             safe.endSignalTime = block.timestamp + (6 * safe.signalingPeriod);
 
@@ -117,6 +123,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
     function rule(uint256 _disputeID, uint256 _ruling) external override {
         _rule(_disputeID, _ruling, arbitrator);
+        emit Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 
     function depositSafeFunds(string memory _safeId)
@@ -142,7 +149,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        if (safe.claimType == Types.ClaimType.KlerosCourt) {
+        if (safe.claimType == Types.ClaimType.ArbitrationBased) {
             Types.Claim memory claim = claims[_disputeID];
 
             return claim.status;
@@ -172,7 +179,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         Types.RecoveryProof[] memory _guardianproof,
         string[] memory _secrets,
         string memory _safeId
-    ) internal returns (bool) {
+    ) external returns (bool) {
         Types.Safe memory safe = safes[_safeId];
         return
             _guardianProof(
@@ -180,8 +187,8 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _signature,
                 _guardianproof,
                 _secrets,
-                safe.safeCreatedBy,
-                safe.safeFunds
+                safe.createdBy,
+                safe.funds
             );
     }
 }
