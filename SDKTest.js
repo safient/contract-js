@@ -24,6 +24,11 @@ describe('safientMain', async () => {
     safeCreatorAddress,
     beneficiaryAddress;
 
+  const ClaimType = {
+    SignalBased: 0,
+    ArbitrationBased: 1,
+  };
+
   describe('SafientClaims SDK Test Flow', async () => {
     before(async () => {
       // Provider and ChainId
@@ -51,7 +56,7 @@ describe('safientMain', async () => {
       await sc.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
         safeId1OnThreadDB,
-        1,
+        ClaimType.ArbitrationBased,
         0, // 0 seconds (6 * 0) because opting ArbitrationBased
         metaevidenceOrEvidenceURI,
         String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -73,7 +78,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           beneficiaryAddress,
           '',
-          1,
+          ClaimType.ArbitrationBased,
           0,
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -85,7 +90,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           '0x0',
           safeId1OnThreadDB,
-          1,
+          ClaimType.ArbitrationBased,
           0,
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -97,7 +102,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           safeCreatorAddress,
           safeId1OnThreadDB,
-          1,
+          ClaimType.ArbitrationBased,
           0, // 0 seconds (6 * 0) because opting ArbitrationBased
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -112,7 +117,7 @@ describe('safientMain', async () => {
       await sc.safientMain.syncSafe(
         safeCreatorAddress, // 2nd account
         safeId2OnThreadDB,
-        0,
+        ClaimType.SignalBased,
         1, // 6 seconds (6 * 1) because opting SignalBased
         '', // no metaevidence because SignalBased
         '' // no safe maintenence fee because SignalBased
@@ -134,7 +139,7 @@ describe('safientMain', async () => {
       await sc2.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
         safeId3OnThreadDB,
-        0,
+        ClaimType.SignalBased,
         1, // 6 seconds (6 * 1) because opting SignalBased
         '',
         ''

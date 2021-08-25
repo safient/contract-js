@@ -10,6 +10,11 @@ describe('SafientMain', async () => {
   const safeId2 = '01234567891'; // SignalBased claim (owner won't signal)
   const safeId3 = '01234567892'; // SignalBased claim (owner will signal)
 
+  const ClaimType = {
+    SignalBased: 0,
+    ArbitrationBased: 1,
+  };
+
   describe('SafientMain Contract Test Flow', async () => {
     it('Should deploy SafientMain', async () => {
       [safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX] = await ethers.getSigners();
@@ -33,7 +38,7 @@ describe('SafientMain', async () => {
       await safientMain.connect(safeCreator).createSafe(
         beneficiary.address,
         safeId1,
-        1,
+        ClaimType.ArbitrationBased,
         0, // 0 seconds (6 * 0) because opting ArbitrationBased
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
         {
@@ -60,7 +65,7 @@ describe('SafientMain', async () => {
           .createSafe(
             '0x0000000000000000000000000000000000000000',
             safeId1,
-            1,
+            ClaimType.ArbitrationBased,
             0,
             'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
             {
@@ -76,7 +81,7 @@ describe('SafientMain', async () => {
           .createSafe(
             safeCreator.address,
             safeId1,
-            1,
+            ClaimType.ArbitrationBased,
             0,
             'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
             {
@@ -91,7 +96,7 @@ describe('SafientMain', async () => {
       await safientMain.connect(beneficiary).syncSafe(
         safeCreator.address,
         safeId2,
-        0,
+        ClaimType.SignalBased,
         1, // 6 seconds (6 * 1) because opting SignalBased
         '' // no metaevidence because SignalBased
       );
@@ -108,16 +113,16 @@ describe('SafientMain', async () => {
 
       // FAILURE : beneficiary is an zero address
       await expect(
-        safientMain.connect(beneficiary).syncSafe('0x0000000000000000000000000000000000000000', safeId2, 0, 1, '')
+        safientMain.connect(beneficiary).syncSafe('0x0000000000000000000000000000000000000000', safeId2, ClaimType.SignalBased, 1, '')
       ).to.be.revertedWith('Should provide an creator for the safe');
 
       // FAILURE : safe creator and beneficiary are same
       await expect(
-        safientMain.connect(beneficiary).syncSafe(beneficiary.address, safeId2, 0, 1, '')
+        safientMain.connect(beneficiary).syncSafe(beneficiary.address, safeId2, ClaimType.SignalBased, 1, '')
       ).to.be.revertedWith('Safe should be synced by the beneficiary of the safe');
 
       // SUCCESS : create another safe with safeId3(for claimType - SignalBased & signal - will signal)
-      await safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId3, 0, 1, '');
+      await safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId3, ClaimType.SignalBased, 1, '');
     });
 
     it('Should allow beneficiaries to create a claim (ArbitrationBased)', async () => {
