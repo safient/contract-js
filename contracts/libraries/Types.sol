@@ -11,23 +11,32 @@ library Types {
         Refused
     }
 
+    enum ClaimType {
+        SignalBased,
+        ArbitrationBased
+    }
+
     struct Safe {
         string safeId;
-        address safeCreatedBy;
-        address safeCurrentOwner;
-        address safeBeneficiary;
+        address createdBy;
+        address currentOwner;
+        address beneficiary;
+        uint256 signalingPeriod;
+        uint256 endSignalTime;
+        uint256 latestSignalTime;
+        ClaimType claimType;
         uint256 metaEvidenceId;
         uint256 claimsCount;
-        uint256 safeFunds;
+        uint256 funds;
     }
 
     struct Claim {
+        ClaimType claimType;
         uint256 disputeId;
         address claimedBy;
         uint256 metaEvidenceId;
         uint256 evidenceGroupId;
         ClaimStatus status;
-        string result;
     }
 
     struct RecoveryProof {
@@ -35,12 +44,12 @@ library Types {
         address guardianAddress;
     }
 
-    struct claimCreationRequisiteData {
+    struct ArbitrationBasedClaimCreationRequisiteData {
         IArbitrator arbitrator;
         uint256 arbitrationCost;
         uint256 metaEvidenceId;
-        address safeCurrentOwner;
-        address safeBeneficiary;
-        uint256 safeFunds;
+        address currentOwner;
+        address beneficiary;
+        uint256 funds;
     }
 }

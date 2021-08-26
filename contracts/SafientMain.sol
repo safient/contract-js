@@ -2,11 +2,13 @@
 pragma solidity >=0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "hardhat/console.sol";
 import "./components/Safes.sol";
 import "./components/Claims.sol";
 import "./components/Guardians.sol";
 import "./interfaces/IArbitrator.sol";
 import "./interfaces/IArbitrable.sol";
+import "./libraries/Types.sol";
 
 contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     IArbitrator public arbitrator;
@@ -26,28 +28,34 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     function createSafe(
         address _beneficiary,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
             _createSafeByCreator(
                 _beneficiary,
                 _safeId,
-                _metaEvidence,
-                arbitrator
+                _claimType,
+                _signalingPeriod,
+                _metaEvidence
             );
     }
 
     function syncSafe(
         address _creator,
         string memory _safeId,
+        Types.ClaimType _claimType,
+        uint256 _signalingPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
             _createSafeByBeneficiary(
                 _creator,
                 _safeId,
-                _metaEvidence,
-                arbitrator
+                _claimType,
+                _signalingPeriod,
+                _metaEvidence
             );
     }
 
@@ -58,25 +66,51 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        uint256 arbitrationCost = arbitrator.arbitrationCost("");
+        if (safe.claimType == Types.ClaimType.ArbitrationBased) {
+            uint256 arbitrationCost = arbitrator.arbitrationCost("");
 
-        Types.claimCreationRequisiteData memory data = Types
-            .claimCreationRequisiteData(
-                arbitrator,
-                arbitrationCost,
-                safe.metaEvidenceId,
-                safe.safeCurrentOwner,
-                safe.safeBeneficiary,
-                safe.safeFunds
+            Types.ArbitrationBasedClaimCreationRequisiteData memory data = Types
+                .ArbitrationBasedClaimCreationRequisiteData(
+                    arbitrator,
+                    arbitrationCost,
+                    safe.metaEvidenceId,
+                    safe.currentOwner,
+                    safe.beneficiary,
+                    safe.funds
+                );
+
+            _createArbitrationBasedClaim(_safeId, _evidence, data);
+
+            safe.claimsCount += 1;
+            safe.funds -= arbitrationCost;
+            safes[_safeId] = safe;
+        } else if (safe.claimType == Types.ClaimType.SignalBased) {
+            require(safe.currentOwner != address(0), "Safe does not exist");
+            require(
+                bytes(_safeId).length > 1,
+                "Should provide ID of the safe on threadDB"
+            );
+            require(
+                msg.sender == safe.beneficiary,
+                "Only beneficiary of the safe can create the claim"
+            );
+            require(
+                safe.endSignalTime == 0,
+                "Safe end signal time should be zero"
+            );
+            require(
+                safe.latestSignalTime == 0,
+                "Safe latest signal time should be zero"
             );
 
-        _createClaim(_safeId, _evidence, data);
+            safe.endSignalTime = block.timestamp + (6 * safe.signalingPeriod);
 
-        safe.claimsCount += 1;
-        safe.safeFunds -= arbitrationCost;
+            _createSignalBasedClaim(_safeId);
 
-        safes[_safeId] = safe;
-        
+            safe.claimsCount += 1;
+            safes[_safeId] = safe;
+        }
+
         return true;
     }
 
@@ -89,6 +123,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
     function rule(uint256 _disputeID, uint256 _ruling) external override {
         _rule(_disputeID, _ruling, arbitrator);
+        emit Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 
     function depositSafeFunds(string memory _safeId)
@@ -101,6 +136,41 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
     function retrieveSafeFunds(string memory _safeId) external returns (bool) {
         return _retrieveSafeFunds(_safeId);
+    }
+
+    function sendSignal(string memory _safeId) external returns (bool) {
+        return _sendSignal(_safeId);
+    }
+
+    function getClaimStatus(string memory _safeId, uint256 _disputeID)
+        external
+        view
+        returns (Types.ClaimStatus status)
+    {
+        Types.Safe memory safe = safes[_safeId];
+
+        if (safe.claimType == Types.ClaimType.ArbitrationBased) {
+            Types.Claim memory claim = claims[_disputeID];
+
+            return claim.status;
+        } else if (safe.claimType == Types.ClaimType.SignalBased) {
+            if (
+                safe.latestSignalTime == 0 &&
+                block.timestamp < safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Active;
+            } else if (
+                safe.latestSignalTime == 0 &&
+                block.timestamp > safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Passed;
+            } else if (
+                safe.latestSignalTime > 0 &&
+                safe.latestSignalTime < safe.endSignalTime
+            ) {
+                return Types.ClaimStatus.Failed;
+            }
+        }
     }
 
     function guardianProof(
@@ -117,8 +187,8 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _signature,
                 _guardianproof,
                 _secrets,
-                safe.safeCreatedBy,
-                safe.safeFunds
+                safe.createdBy,
+                safe.funds
             );
     }
 }

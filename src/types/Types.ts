@@ -30,3 +30,8 @@ export type RecoveryProof = {
   secret: string;
   address: string;
 };
+
+export enum ClaimType {
+  SignalBased,
+  ArbitrationBased
+}

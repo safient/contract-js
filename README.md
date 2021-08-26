@@ -77,7 +77,6 @@ sc.safientMain.depositSafeFunds
 sc.safientMain.retrieveSafeFunds
 sc.safientMain.getTotalNumberOfSafes
 sc.safientMain.getTotalNumberOfClaims
-sc.safientMain.getAllClaims
 sc.safientMain.getSafeBySafeId
 sc.safientMain.getClaimByClaimId
 sc.safientMain.getClaimStatus
@@ -111,9 +110,16 @@ const getArbitrationFee = async () => {
 #### Create Safe
 
 ```javascript
-const createSafe = async (beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI, value) => {
+const createSafe = async (beneficiaryAddress, safeIdOnThreadDB, claimType, signalingPeriod, metaevidenceURI, value) => {
   try {
-    const tx = await sc.safientMain.createSafe(beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI, value);
+    const tx = await sc.safientMain.createSafe(
+      beneficiaryAddress,
+      safeIdOnThreadDB,
+      claimType,
+      signalingPeriod,
+      metaevidenceURI,
+      value
+    );
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -121,12 +127,14 @@ const createSafe = async (beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI,
 };
 ```
 
-| Parameter          | Type     | Description                                                                        |
-| :----------------- | :------- | :--------------------------------------------------------------------------------- |
-| `beneficiaryAddress` | `string` | **Required**. Address of the beneficiary who can claim to inherit this safe        |
-| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                  |
-| `metaevidenceURI`  | `string` | **Required**. IPFS URI pointing to the metaevidence related to arbitration details |
-| `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required   |
+| Parameter            | Type     | Description                                                                      |
+| :------------------- | :------- | :------------------------------------------------------------------------------- |
+| `beneficiaryAddress` | `string` | **Required**. Address of the beneficiary who can claim to inherit this safe      |
+| `safeIdOnThreadDB`   | `string` | **Required**. Safe Id on threadDB                                                |
+| `claimType`          | `string` | **Required**. Type of claim the inheritor has go through                         |
+| `signalingPeriod`    | `string` | Number of days within which the safe creator is willing to send a signal         |
+| `metaevidenceURI`    | `string` | IPFS URI pointing to the metaevidence related to arbitration details             |
+| `value`              | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required |
 
 <br />
 
@@ -137,9 +145,16 @@ const createSafe = async (beneficiaryAddress, safeIdOnThreadDB, metaevidenceURI,
 #### Sync Safe
 
 ```javascript
-const syncSafe = async (creatorAddress, safeIdOnThreadDB, metaevidenceURI, value) => {
+const syncSafe = async (creatorAddress, safeIdOnThreadDB, claimType, signalingPeriod, metaevidenceURI, value) => {
   try {
-    const tx = await sc.safientMain.syncSafe(creatorAddress, safeIdOnThreadDB, metaevidenceURI, value);
+    const tx = await sc.safientMain.syncSafe(
+      creatorAddress,
+      safeIdOnThreadDB,
+      claimType,
+      signalingPeriod,
+      metaevidenceURI,
+      value
+    );
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -147,12 +162,14 @@ const syncSafe = async (creatorAddress, safeIdOnThreadDB, metaevidenceURI, value
 };
 ```
 
-| Parameter          | Type     | Description                                                                        |
-| :----------------- | :------- | :--------------------------------------------------------------------------------- |
-| `creatorAddress`   | `string` | **Required**. Address of the creator who created the safe offchain                 |
-| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                  |
-| `metaevidenceURI`  | `string` | **Required**. IPFS URI pointing to the metaevidence related to arbitration details |
-| `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required   |
+| Parameter          | Type     | Description                                                                      |
+| :----------------- | :------- | :------------------------------------------------------------------------------- |
+| `creatorAddress`   | `string` | **Required**. Address of the creator who created the safe offchain               |
+| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                |
+| `claimType`        | `string` | **Required**. Type of claim the inheritor has go through                         |
+| `signalingPeriod`  | `string` | Number of days within which the safe creator is willing to send a signal         |
+| `metaevidenceURI`  | `string` | IPFS URI pointing to the metaevidence related to arbitration details             |
+| `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required |
 
 <br />
 
@@ -173,10 +190,10 @@ const createClaim = async (safeIdOnThreadDB, evidenceURI) => {
 };
 ```
 
-| Parameter          | Type     | Description                                                                    |
-| :----------------- | :------- | :----------------------------------------------------------------------------- |
-| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                              |
-| `evidenceURI`      | `string` | **Required**. IPFS URI pointing to the evidence submitted by the claim creator |
+| Parameter          | Type     | Description                                                      |
+| :----------------- | :------- | :--------------------------------------------------------------- |
+| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                |
+| `evidenceURI`      | `string` | IPFS URI pointing to the evidence submitted by the claim creator |
 
 <br />
 
@@ -240,6 +257,31 @@ const depositSafeFunds = async (safeIdOnThreadDB, value) => {
 const retrieveSafeFunds = async (safeIdOnThreadDB) => {
   try {
     const tx = await sc.safientMain.retrieveSafeFunds(safeIdOnThreadDB);
+    console.log(tx);
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+```
+
+| Parameter          | Type     | Description                       |
+| :----------------- | :------- | :-------------------------------- |
+| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB |
+
+<br />
+
+| Returns                | Type     | Description                              |
+| :--------------------- | :------- | :--------------------------------------- |
+| `Transaction Response` | `object` | Includes all properties of a transaction |
+
+#### Send signal
+
+> Only **safe's current owner** can execute this
+
+```javascript
+const sendSignal = async (safeIdOnThreadDB) => {
+  try {
+    const tx = await sc.safientMain.sendSignal(safeIdOnThreadDB);
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -323,7 +365,10 @@ const getSafeBySafeId = async (safeIdOnThreadDB) => {
 | `safeId`           | `string`   | Safe Id on threadDB                                   |
 | `safeCreatedBy`    | `string`   | Address of the safe creator                           |
 | `safeCurrentOwner` | `string`   | Address of the current safe owner                     |
-| `safeInheritor`    | `string`   | Address of the safe inheritor (beneficiary)           |
+| `safeBeneficiary`  | `string`   | Address of the safe beneficiary                       |
+| `signalingPeriod`  | `Bigumber` | Number of days before which signal should be given    |
+| `endSignalTime`    | `Bigumber` | End timestamp before which signal should be given     |
+| `latestSignalTime` | `Bigumber` | Timestamp at which signal is given                    |
 | `metaEvidenceId`   | `Bigumber` | Id used to uniquely identify a piece of meta-evidence |
 | `claimsCount`      | `Bigumber` | Number of claims made on this safe                    |
 | `safeFunds`        | `Bigumber` | Total safe funds in **Gwei**                          |
@@ -357,35 +402,18 @@ const getClaimByClaimId = async (claimId) => {
 
 | Property          | Type        | Description                                                                    |
 | :---------------- | :---------- | :----------------------------------------------------------------------------- |
-| `safeId`          | `string`    | Safe Id on threadDB                                                            |
+| `claimType`       | `BigNumber` | Type of claim **0 - SignalBased**, **1 - ArbitrationBased**                    |
 | `disputeId`       | `BigNumber` | Id of the dispute representing the claim                                       |
 | `claimedBy`       | `string`    | Address of the claim creator                                                   |
 | `metaEvidenceId`  | `BigNumber` | Id used to uniquely identify a piece of meta-evidence                          |
 | `evidenceGroupId` | `Bigumber`  | Id used to identify a group of evidence related to a dispute                   |
-| `status`          | `number`    | Claim status represented by **0**, **1**, **2** or **3**                       |
+| `status`          | `BigNumber` | Claim status represented by **0**, **1**, **2** or **3**                       |
 | `result`          | `string`    | Claim result represented by **Passed**, **Failed** or **Refused To Arbitrate** |
-
-#### Get All Claims
-
-```javascript
-const getAllClaims = async () => {
-  try {
-    const claims = await sc.safientMain.getAllClaims();
-    console.log(claims);
-  } catch (e) {
-    console.log(e.message);
-  }
-};
-```
-
-| Returns           | Type      | Description                                    |
-| :---------------- | :-------- | :--------------------------------------------- |
-| `Array of claims` | `Claim[]` | Array of all the claims created on SafientMain |
 
 #### Get Claim Status
 
 ```javascript
-const getClaimStatus = async (claimId) => {
+const getClaimStatus = async (safeIdOnThreadDB, claimId) => {
   try {
     const claimStatus = await sc.safientMain.getClaimStatus(claimId);
     console.log(claimStatus);
@@ -395,9 +423,10 @@ const getClaimStatus = async (claimId) => {
 };
 ```
 
-| Parameter | Type     | Description                   |
-| :-------- | :------- | :---------------------------- |
-| `claimId` | `number` | **Required**. Id of the claim |
+| Parameter          | Type     | Description                       |
+| :----------------- | :------- | :-------------------------------- |
+| `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB |
+| `claimId`          | `number` | **Required**. Id of the claim     |
 
 <br />
 
