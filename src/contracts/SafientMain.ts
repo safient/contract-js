@@ -129,10 +129,10 @@ export class SafientMain {
    * @param value - Funds in Gwei
    * @returns A transaction response
    */
-  depositSafeFunds = async (safeIdOnThreadDB: string, value: string): Promise<TransactionResponse> => {
+  depositFunds = async (safeIdOnThreadDB: string, value: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      this.tx = await contract.depositSafeFunds(safeIdOnThreadDB, { value });
+      this.tx = await contract.depositFunds(safeIdOnThreadDB, { value });
       return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -140,14 +140,14 @@ export class SafientMain {
   };
 
   /**
-   * Retrieve funds from a safe - only safe's current owner can execute this
+   * Withdraw funds from a safe - only safe's current owner can execute this
    * @param safeIdOnThreadDB - Id of the safe on threadDB
    * @returns A transaction response
    */
-  retrieveSafeFunds = async (safeIdOnThreadDB: string): Promise<TransactionResponse> => {
+  withdrawFunds = async (safeIdOnThreadDB: string): Promise<TransactionResponse> => {
     try {
       const contract = await this.getContractInstance();
-      this.tx = await contract.retrieveSafeFunds(safeIdOnThreadDB);
+      this.tx = await contract.withdrawFunds(safeIdOnThreadDB);
       return this.tx;
     } catch (e) {
       this.logger.throwError(e.message);
@@ -224,13 +224,8 @@ export class SafientMain {
   getClaimByClaimId = async (claimId: number): Promise<Claim> => {
     try {
       const contract = await this.getContractInstance();
-      const claimsCount: BigNumber = await contract.claimsCount();
       const claim: Claim = await contract.claims(claimId);
       return claim;
-      // if (claimId + 1 >= Number(claimsCount)) {
-      //   this.logger.throwArgumentError('Claim Id does not exist', 'claimId', claimId);
-      // } else {
-      // }
     } catch (e) {
       this.logger.throwError(e.message);
     }
@@ -268,10 +263,10 @@ export class SafientMain {
    * Get the total balance of the SafientMain contract
    * @returns The total balance of SafientMain contract in ETH
    */
-  getSafientMainContractBalance = async (): Promise<number> => {
+  getContractBalance = async (): Promise<number> => {
     try {
       const contract = await this.getContractInstance();
-      const mainContractBalance: BigNumber = await contract.getSafientMainContractBalance();
+      const mainContractBalance: BigNumber = await contract.getBalance();
       return Number(formatEther(mainContractBalance));
     } catch (e) {
       this.logger.throwError(e.message);
