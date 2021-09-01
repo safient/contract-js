@@ -17,9 +17,9 @@ contract Claims {
         rulingOptions = 2;
     }
 
-    modifier arbitrationBasedClaimCreationRequisite(
+    modifier arbitrationBasedClaim(
         string memory _safeId,
-        Types.ArbitrationBasedClaimCreationRequisiteData memory data
+        Types.ArbitrationBasedClaimData memory data
     ) {
         require(data.currentOwner != address(0), "Safe does not exist");
         require(
@@ -37,10 +37,24 @@ contract Claims {
         _;
     }
 
-    modifier submitEvidenceRequisite(
-        uint256 _disputeID,
-        string calldata _evidence
+    modifier signalBasedClaim(
+        string memory _safeId,
+        Types.SignalBasedClaimData memory data
     ) {
+        require(data.currentOwner != address(0), "Safe does not exist");
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+        require(
+            msg.sender == data.beneficiary,
+            "Only beneficiary of the safe can create the claim"
+        );
+        require(data.endSignalTime == 0, "Safe end signal time should be zero");
+        _;
+    }
+
+    modifier evidenceSubmission(uint256 _disputeID, string calldata _evidence) {
         require(_disputeID <= claimsCount, "Claim or Dispute does not exist");
         require(bytes(_evidence).length > 1, "Should provide evidence URI");
         Types.Claim memory claim = claims[_disputeID];
@@ -59,7 +73,7 @@ contract Claims {
         _;
     }
 
-    modifier shouldBeValidRuling(uint256 _ruling) {
+    modifier validRuling(uint256 _ruling) {
         require(_ruling <= rulingOptions, "Ruling out of bounds!");
         _;
     }
@@ -81,14 +95,14 @@ contract Claims {
     event CreateClaim(
         address indexed createdBy,
         string indexed safeId,
-        uint256 indexed disputeId
+        uint256 indexed id
     );
 
     function _submitEvidence(
         uint256 _disputeID,
         string calldata _evidence,
         IArbitrator arbitrator
-    ) internal submitEvidenceRequisite(_disputeID, _evidence) returns (bool) {
+    ) internal evidenceSubmission(_disputeID, _evidence) returns (bool) {
         Types.Claim memory claim = claims[_disputeID];
 
         emit Evidence(arbitrator, claim.evidenceGroupId, msg.sender, _evidence);
@@ -99,12 +113,8 @@ contract Claims {
     function _createArbitrationBasedClaim(
         string memory _safeId,
         string calldata _evidence,
-        Types.ArbitrationBasedClaimCreationRequisiteData memory data
-    )
-        internal
-        arbitrationBasedClaimCreationRequisite(_safeId, data)
-        returns (uint256)
-    {
+        Types.ArbitrationBasedClaimData memory data
+    ) internal arbitrationBasedClaim(_safeId, data) returns (uint256) {
         uint256 disputeID = data.arbitrator.createDispute{
             value: data.arbitrationCost
         }(rulingOptions, "");
@@ -119,9 +129,9 @@ contract Claims {
         );
 
         claims[disputeID] = Types.Claim({
-            claimType: Types.ClaimType.ArbitrationBased,
-            disputeId: disputeID,
+            id: disputeID,
             claimedBy: msg.sender,
+            claimType: Types.ClaimType.ArbitrationBased,
             metaEvidenceId: data.metaEvidenceId,
             evidenceGroupId: evidenceGroupID,
             status: Types.ClaimStatus.Active
@@ -138,13 +148,16 @@ contract Claims {
         return disputeID;
     }
 
-    function _createSignalBasedClaim(string memory _safeId) internal {
+    function _createSignalBasedClaim(
+        string memory _safeId,
+        Types.SignalBasedClaimData memory data
+    ) internal signalBasedClaim(_safeId, data) {
         claimsCount += 1;
 
         claims[claimsCount] = Types.Claim({
-            claimType: Types.ClaimType.SignalBased,
-            disputeId: claimsCount,
+            id: claimsCount,
             claimedBy: msg.sender,
+            claimType: Types.ClaimType.SignalBased,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Active
@@ -157,7 +170,7 @@ contract Claims {
         uint256 _disputeID,
         uint256 _ruling,
         IArbitrator arbitrator
-    ) internal onlyArbitrator(arbitrator) shouldBeValidRuling(_ruling) {
+    ) internal onlyArbitrator(arbitrator) validRuling(_ruling) {
         Types.Claim memory claim = claims[_disputeID];
 
         if (_ruling == 1) {

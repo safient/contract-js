@@ -57,13 +57,13 @@ describe('safientMain', async () => {
         beneficiaryAddress, // 2nd account
         safeId1OnThreadDB,
         ClaimType.ArbitrationBased,
-        0, // 0 seconds (6 * 0) because opting ArbitrationBased
+        0, // 0 seconds because opting ArbitrationBased
         metaevidenceOrEvidenceURI,
         String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
       );
 
       expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(1);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
+      expect(await sc.safientMain.getContractBalance()).to.equal(0.011);
 
       const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
@@ -118,18 +118,18 @@ describe('safientMain', async () => {
         safeCreatorAddress, // 2nd account
         safeId2OnThreadDB,
         ClaimType.SignalBased,
-        1, // 6 seconds (6 * 1) because opting SignalBased
+        6, // 6 seconds because opting SignalBased
         '', // no metaevidence because SignalBased
         '' // no safe maintenence fee because SignalBased
       );
 
       expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(2);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.011);
+      expect(await sc.safientMain.getContractBalance()).to.equal(0.011);
 
       const safe = await sc.safientMain.getSafeBySafeId(safeId2OnThreadDB);
       expect(safe.createdBy).to.equal(safeCreatorAddress);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
-      expect(Number(safe.signalingPeriod)).to.equal(1); // 6 seconds
+      expect(Number(safe.signalingPeriod)).to.equal(6); // 6 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
       expect(Number(safe.claimType)).to.equal(0); // SignalBased
@@ -140,7 +140,7 @@ describe('safientMain', async () => {
         beneficiaryAddress, // 2nd account
         safeId3OnThreadDB,
         ClaimType.SignalBased,
-        1, // 6 seconds (6 * 1) because opting SignalBased
+        6,
         '',
         ''
       );
@@ -162,10 +162,10 @@ describe('safientMain', async () => {
       await sc.safientMain.createClaim(safeId1OnThreadDB, metaevidenceOrEvidenceURI);
 
       expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(1);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0.01);
+      expect(await sc.safientMain.getContractBalance()).to.equal(0.01);
 
       const claim1 = await sc.safientMain.getClaimByClaimId(0);
-      expect(claim1.disputeId).to.equal(0);
+      expect(claim1.id).to.equal(0);
       expect(claim1.claimedBy).to.equal(beneficiaryAddress);
     });
 
@@ -177,7 +177,7 @@ describe('safientMain', async () => {
       const safeWithSafeId2 = await sc.safientMain.getSafeBySafeId(safeId2OnThreadDB);
       expect(safeWithSafeId2.claimsCount).to.equal(1);
       const claimOnSafeId2 = await sc.safientMain.getClaimByClaimId(2);
-      expect(claimOnSafeId2.disputeId).to.equal(2);
+      expect(claimOnSafeId2.id).to.equal(2);
       expect(claimOnSafeId2.claimedBy).to.equal(beneficiaryAddress);
 
       // SUCCESS : create claim on safeId3
@@ -185,7 +185,7 @@ describe('safientMain', async () => {
       const safeWithSafeId3 = await sc.safientMain.getSafeBySafeId(safeId3OnThreadDB);
       expect(safeWithSafeId3.claimsCount).to.equal(1);
       const claimOnSafeId3 = await sc.safientMain.getClaimByClaimId(3);
-      expect(claimOnSafeId3.disputeId).to.equal(3);
+      expect(claimOnSafeId3.id).to.equal(3);
       expect(claimOnSafeId3.claimedBy).to.equal(beneficiaryAddress);
     });
 
@@ -231,27 +231,27 @@ describe('safientMain', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
 
       // SUCCESS : deposit funds in a safe
-      await sc.safientMain.depositSafeFunds(safeId1OnThreadDB, String(ethers.utils.parseEther('2')));
+      await sc.safientMain.depositFunds(safeId1OnThreadDB, String(ethers.utils.parseEther('2')));
 
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(2.01);
+      expect(await sc.safientMain.getContractBalance()).to.equal(2.01);
     });
 
-    it('Should allow current owner of the to retrieve funds in the safe', async () => {
+    it('Should allow current owner of the to withdraw funds in the safe', async () => {
       let sc;
       sc = new SafientClaims(accountXSigner, chainId);
 
-      // FAILURE : only safe owner can retrieve the funds
-      await expect(sc.safientMain.retrieveSafeFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
+      // FAILURE : only safe owner can withdraw the funds
+      await expect(sc.safientMain.withdrawFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
 
       sc = new SafientClaims(safeCreatorSigner, chainId);
 
-      // SUCCESS : retrieve funds from a safe
-      await sc.safientMain.retrieveSafeFunds(safeId1OnThreadDB);
+      // SUCCESS : withdraw funds from a safe
+      await sc.safientMain.withdrawFunds(safeId1OnThreadDB);
 
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0);
+      expect(await sc.safientMain.getContractBalance()).to.equal(0);
 
       // FAILURE : no funds remaining in the safe
-      await expect(sc.safientMain.retrieveSafeFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
+      await expect(sc.safientMain.withdrawFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
     });
 
     it('Should get the safe by its Safe Id', async () => {
@@ -259,7 +259,7 @@ describe('safientMain', async () => {
 
       const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
 
-      expect(safe.safeId).to.equal(safeId1OnThreadDB);
+      expect(safe.id).to.equal(safeId1OnThreadDB);
       expect(safe.createdBy).to.equal(safeCreatorAddress);
       expect(safe.claimsCount).to.equal(1);
       expect(safe.funds).to.equal(0);
@@ -270,7 +270,7 @@ describe('safientMain', async () => {
 
       const claim = await sc.safientMain.getClaimByClaimId(3);
 
-      expect(claim.disputeId).to.equal(3);
+      expect(claim.id).to.equal(3);
       expect(claim.claimedBy).to.equal(beneficiaryAddress);
       expect(claim.claimType).to.equal(0);
     });
@@ -287,7 +287,7 @@ describe('safientMain', async () => {
 
     it('Should get the SafientMain contract balance', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getSafientMainContractBalance()).to.equal(0);
+      expect(await sc.safientMain.getContractBalance()).to.equal(0);
     });
   });
 });

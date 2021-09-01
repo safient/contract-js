@@ -17,7 +17,7 @@ library Types {
     }
 
     struct Safe {
-        string safeId;
+        string id;
         address createdBy;
         address currentOwner;
         address beneficiary;
@@ -31,9 +31,9 @@ library Types {
     }
 
     struct Claim {
-        ClaimType claimType;
-        uint256 disputeId;
+        uint256 id;
         address claimedBy;
+        ClaimType claimType;
         uint256 metaEvidenceId;
         uint256 evidenceGroupId;
         ClaimStatus status;
@@ -44,12 +44,19 @@ library Types {
         address guardianAddress;
     }
 
-    struct ArbitrationBasedClaimCreationRequisiteData {
-        IArbitrator arbitrator;
-        uint256 arbitrationCost;
-        uint256 metaEvidenceId;
+    struct SignalBasedClaimData {
+        string id;
         address currentOwner;
         address beneficiary;
+        uint256 endSignalTime;
+    }
+
+    struct ArbitrationBasedClaimData {
+        IArbitrator arbitrator;
+        uint256 arbitrationCost;
+        address currentOwner;
+        address beneficiary;
+        uint256 metaEvidenceId;
         uint256 funds;
     }
 }
