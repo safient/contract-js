@@ -1,12 +1,12 @@
-# Safient Claims SDK
+# Safient Contract SDK
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
 ## Installation
 
 ```bash
-  git clone https://github.com/safient/safient-claims-js.git
-  cd safient-claims-js
+  git clone https://github.com/safient/safient-contract-js.git
+  cd safient-contract-js
   npm install
 ```
 
@@ -15,16 +15,10 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 Terminal 1
 
 ```bash
-  npx tsc -w
-```
-
-Terminal 2
-
-```bash
   npm run chain
 ```
 
-Terminal 3
+Terminal 2
 
 ```bash
   npm run deploy
@@ -73,14 +67,14 @@ sc.safientMain.createSafe
 sc.safientMain.syncSafe
 sc.safientMain.createClaim
 sc.safientMain.submitEvidence
-sc.safientMain.depositSafeFunds
-sc.safientMain.retrieveSafeFunds
+sc.safientMain.depositFunds
+sc.safientMain.withdrawFunds
 sc.safientMain.getTotalNumberOfSafes
 sc.safientMain.getTotalNumberOfClaims
 sc.safientMain.getSafeBySafeId
 sc.safientMain.getClaimByClaimId
 sc.safientMain.getClaimStatus
-sc.safientMain.getSafientMainContractBalance
+sc.safientMain.getContractBalance
 sc.safientMain.guardianProof
 ```
 
@@ -228,9 +222,9 @@ const submitEvidence = async (disputeId, evidenceURI) => {
 #### Deposit Safe Funds
 
 ```javascript
-const depositSafeFunds = async (safeIdOnThreadDB, value) => {
+const depositFunds = async (safeIdOnThreadDB, value) => {
   try {
-    const tx = await sc.safientMain.depositSafeFunds(safeIdOnThreadDB, value);
+    const tx = await sc.safientMain.depositFunds(safeIdOnThreadDB, value);
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -254,9 +248,9 @@ const depositSafeFunds = async (safeIdOnThreadDB, value) => {
 > Only **safe's current owner** can execute this
 
 ```javascript
-const retrieveSafeFunds = async (safeIdOnThreadDB) => {
+const withdrawFunds = async (safeIdOnThreadDB) => {
   try {
-    const tx = await sc.safientMain.retrieveSafeFunds(safeIdOnThreadDB);
+    const tx = await sc.safientMain.withdrawFunds(safeIdOnThreadDB);
     console.log(tx);
   } catch (e) {
     console.log(e.message);
@@ -437,9 +431,9 @@ const getClaimStatus = async (safeIdOnThreadDB, claimId) => {
 #### Get SafientMain Contract Total Balance
 
 ```javascript
-const getSafientMainContractBalance = async () => {
+const getContractBalance = async () => {
   try {
-    const balance = await sc.safientMain.getSafientMainContractBalance();
+    const balance = await sc.safientMain.getContractBalance();
     console.log(balance);
   } catch (e) {
     console.log(e.message);

@@ -4,6 +4,7 @@ const fs = require('fs');
 const R = require('ramda');
 const chalk = require('chalk');
 const { network, arbitratorContract, arbitrableContract, arbitrationFee, arbitratorAddress } = require('../constants');
+const networks = require('../src/utils/networks.json');
 
 const abiEncodeArgs = (deployed, contractArgs) => {
   if (!contractArgs || !deployed || !R.hasPath(['interface', 'deploy'], deployed)) return '';
@@ -14,7 +15,7 @@ const abiEncodeArgs = (deployed, contractArgs) => {
 const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) => {
   console.log(` 🛰  Deploying: ${contractName}`);
 
-  fs.mkdir('src/artifacts', { recursive: true }, (err) => {
+  fs.mkdir('src/abis', { recursive: true }, (err) => {
     if (err) throw err;
   });
 
@@ -25,11 +26,11 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
   const encoded = abiEncodeArgs(deployed, contractArgs);
 
   fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
-  const contractData = {
-    address: deployed.address,
+
+  const abiData = {
     abi: contractArtifact.abi,
   };
-  fs.writeFileSync(`src/artifacts/${contractName}.json`, JSON.stringify(contractData));
+  fs.writeFileSync(`src/abis/${contractName}.json`, JSON.stringify(abiData));
 
   let extraGasInfo = '';
 
@@ -42,12 +43,31 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
   console.log(' 📄', chalk.cyan(contractName), 'deployed to:', chalk.magenta(deployed.address));
   console.log(' ⛽', chalk.grey(extraGasInfo), '\n');
 
+  if (network === 'localhost') {
+    networks.localhost.addresses[`${contractName}`] = String(deployed.address);
+  } else {
+    networks[`${network}`].addresses.AutoAppealableArbitrator = String(arbitratorAddress);
+    networks[`${network}`].addresses.SafientMain = String(deployed.address);
+  }
+
+  fs.writeFileSync('./src/utils/networks.json', JSON.stringify(networks, null, 2), function writeJSON(err) {
+    if (err) return console.log(err);
+  });
+
   if (hre.config.defaultNetwork !== 'localhost' && hre.config.defaultNetwork !== 'hardhat') {
-    console.log(
-      '\n 🚀 View contract on etherscan: ',
-      chalk.green(`https://${hre.config.defaultNetwork}.etherscan.io/address/${deployed.address}`),
-      '\n\n'
-    );
+    if (hre.config.defaultNetwork === 'matictestnet') {
+      console.log(
+        '\n 🚀 View contract on polygonscan: ',
+        chalk.green(`https://mumbai.polygonscan.com/address/${deployed.address}`),
+        '\n\n'
+      );
+    } else {
+      console.log(
+        '\n 🚀 View contract on etherscan: ',
+        chalk.green(`https://${hre.config.defaultNetwork}.etherscan.io/address/${deployed.address}`),
+        '\n\n'
+      );
+    }
   }
 
   if (!encoded || encoded.length <= 2) return deployed;

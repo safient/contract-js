@@ -2,36 +2,43 @@
   "localhost": {
     "chainId": 31337,
     "addresses": {
-      "safientMain": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-      "arbitrator": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"
+      "AutoAppealableArbitrator": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "SafientMain": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
     }
   },
   "mainnet": {
     "chainId": 1,
     "addresses": {
-      "safientMain": "",
-      "arbitrator": ""
-    }
-  },
-  "rosten": {
-    "chainId": 3,
-    "addresses": {
-      "safientMain": "",
-      "arbitrator": ""
+      "AutoAppealableArbitrator": "",
+      "SafientMain": ""
     }
   },
   "rinkeby": {
     "chainId": 4,
     "addresses": {
-      "safientMain": "",
-      "arbitrator": ""
+      "AutoAppealableArbitrator": "0x269C347C6F15d18C8292CB1B8Fc91df9ddAE9883",
+      "SafientMain": "0xDf4B9607982FAa4D288ae067D2b15C3295681569"
     }
   },
   "kovan": {
     "chainId": 42,
     "addresses": {
-      "safientMain": "",
-      "arbitrator": ""
+      "AutoAppealableArbitrator": "0x269C347C6F15d18C8292CB1B8Fc91df9ddAE9883",
+      "SafientMain": "0xCeEc34c3C72a2f15939bE9d5457b9D1986BC4424"
+    }
+  },
+  "ropsten": {
+    "chainId": 3,
+    "addresses": {
+      "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
+      "SafientMain": "0xDf4B9607982FAa4D288ae067D2b15C3295681569"
+    }
+  },
+  "matictestnet": {
+    "chainId": 80001,
+    "addresses": {
+      "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
+      "SafientMain": "0xC0B0591Eac7887F443cef0f28BB818E454eD6637"
     }
   }
 }

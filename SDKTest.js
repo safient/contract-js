@@ -10,7 +10,7 @@ chai.use(require('chai-as-promised'));
 const metaevidenceOrEvidenceURI =
   'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/';
 
-const { SafientClaims } = require('./dist/index');
+const { SafientClaims, Types } = require('./dist/index');
 
 describe('safientMain', async () => {
   const safeId1OnThreadDB = '123456789a',
@@ -23,11 +23,6 @@ describe('safientMain', async () => {
     accountXSigner,
     safeCreatorAddress,
     beneficiaryAddress;
-
-  const ClaimType = {
-    SignalBased: 0,
-    ArbitrationBased: 1,
-  };
 
   describe('SafientClaims SDK Test Flow', async () => {
     before(async () => {
@@ -56,7 +51,7 @@ describe('safientMain', async () => {
       await sc.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
         safeId1OnThreadDB,
-        ClaimType.ArbitrationBased,
+        Types.ClaimType.ArbitrationBased,
         0, // 0 seconds because opting ArbitrationBased
         metaevidenceOrEvidenceURI,
         String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -78,7 +73,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           beneficiaryAddress,
           '',
-          ClaimType.ArbitrationBased,
+          Types.ClaimType.ArbitrationBased,
           0,
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -90,7 +85,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           '0x0',
           safeId1OnThreadDB,
-          ClaimType.ArbitrationBased,
+          Types.ClaimType.ArbitrationBased,
           0,
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -102,7 +97,7 @@ describe('safientMain', async () => {
         sc.safientMain.createSafe(
           safeCreatorAddress,
           safeId1OnThreadDB,
-          ClaimType.ArbitrationBased,
+          Types.ClaimType.ArbitrationBased,
           0, // 0 seconds (6 * 0) because opting ArbitrationBased
           metaevidenceOrEvidenceURI,
           String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
@@ -117,7 +112,7 @@ describe('safientMain', async () => {
       await sc.safientMain.syncSafe(
         safeCreatorAddress, // 2nd account
         safeId2OnThreadDB,
-        ClaimType.SignalBased,
+        Types.ClaimType.SignalBased,
         6, // 6 seconds because opting SignalBased
         '', // no metaevidence because SignalBased
         '' // no safe maintenence fee because SignalBased
@@ -139,7 +134,7 @@ describe('safientMain', async () => {
       await sc2.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
         safeId3OnThreadDB,
-        ClaimType.SignalBased,
+        Types.ClaimType.SignalBased,
         6,
         '',
         ''
