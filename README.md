@@ -12,6 +12,8 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
 ## Running Tests
 
+Create an .env file in the root dtrectory with INFURA_API_KEY
+
 Terminal 1
 
 ```bash
