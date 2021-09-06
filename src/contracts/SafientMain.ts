@@ -6,7 +6,7 @@ import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
 import networks from '../utils/networks.json';
-import data from '../artifacts/SafientMain.json';
+import data from '../abis/SafientMain.json';
 export class SafientMain {
   private signer: Signer;
   private safientMainABI: ContractABI;
@@ -26,8 +26,8 @@ export class SafientMain {
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
-    network !== undefined && network.addresses.safientMain !== ''
-      ? (this.safientMainAddress = data.address)
+    network !== undefined && network.addresses.SafientMain !== ''
+      ? (this.safientMainAddress = network.addresses.SafientMain)
       : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
   }
 
@@ -39,7 +39,7 @@ export class SafientMain {
     try {
       const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, this.signer);
       return contractInstance;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -73,7 +73,7 @@ export class SafientMain {
         { value }
       );
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -102,7 +102,7 @@ export class SafientMain {
         value,
       });
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -118,7 +118,7 @@ export class SafientMain {
       const contract: Contract = await this.getContractInstance();
       this.tx = await contract.createClaim(safeIdOnThreadDB, evidenceURI);
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -134,7 +134,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       this.tx = await contract.depositFunds(safeIdOnThreadDB, { value });
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -149,7 +149,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       this.tx = await contract.withdrawFunds(safeIdOnThreadDB);
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -165,7 +165,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       this.tx = await contract.submitEvidence(disputeId, evidenceURI);
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -180,7 +180,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       this.tx = await contract.sendSignal(safeIdOnThreadDB);
       return this.tx;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -196,7 +196,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const claimStatus: number = await contract.getClaimStatus(safeIdOnThreadDB, claimId);
       return claimStatus;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -211,7 +211,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const safe: Safe = await contract.safes(safeIdOnThreadDB);
       return safe;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -226,7 +226,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const claim: Claim = await contract.claims(claimId);
       return claim;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -240,7 +240,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const totalSafes: BigNumber = await contract.safesCount();
       return Number(totalSafes);
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -254,7 +254,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const totalClaims: BigNumber = await contract.claimsCount();
       return Number(totalClaims);
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -268,7 +268,7 @@ export class SafientMain {
       const contract = await this.getContractInstance();
       const mainContractBalance: BigNumber = await contract.getBalance();
       return Number(formatEther(mainContractBalance));
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -299,7 +299,7 @@ export class SafientMain {
         safeIdOnThreadDB
       );
       return result;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };

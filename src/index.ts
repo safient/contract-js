@@ -1,6 +1,8 @@
 import { Signer } from './types/Types';
 import { SafientMain } from './contracts/SafientMain';
 import { Arbitrator } from './contracts/Arbitrator';
+
+export * as Types from './types/Types';
 export class SafientClaims {
   safientMain: SafientMain;
   arbitrator: Arbitrator;

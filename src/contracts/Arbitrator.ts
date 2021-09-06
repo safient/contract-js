@@ -4,7 +4,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import networks from '../utils/networks.json';
-import data from '../artifacts/AutoAppealableArbitrator.json';
+import data from '../abis/AutoAppealableArbitrator.json';
 export class Arbitrator {
   private signer: Signer;
   private arbitratorABI: ContractABI;
@@ -23,8 +23,8 @@ export class Arbitrator {
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
-    network !== undefined && network.addresses.arbitrator !== ''
-      ? (this.arbitratorAddress = data.address)
+    network !== undefined && network.addresses.AutoAppealableArbitrator !== ''
+      ? (this.arbitratorAddress = network.addresses.AutoAppealableArbitrator)
       : this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
   }
 
@@ -36,7 +36,7 @@ export class Arbitrator {
     try {
       const contractInstance = new Contract(this.arbitratorAddress, this.arbitratorABI, this.signer);
       return contractInstance;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -50,7 +50,7 @@ export class Arbitrator {
       const contract = await this.getContractInstance();
       const arbitrationFee: BigNumber = await contract.arbitrationCost(0x0);
       return Number(formatEther(arbitrationFee));
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };
@@ -60,7 +60,7 @@ export class Arbitrator {
       const contract = await this.getContractInstance();
       await contract.giveRuling(disputeId, ruling);
       return true;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.throwError(e.message);
     }
   };

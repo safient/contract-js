@@ -5,6 +5,8 @@ artifacts
 !src/artifacts
 cache
 
+mnemonic.txt
+
 # local env files
 .env
 .env.local
