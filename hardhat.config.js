@@ -13,30 +13,35 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      blockExplorer: 'https://etherscan.io',
       accounts: {
         mnemonic: mnemonic(),
       },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      blockExplorer: 'https://rinkeby.etherscan.io',
       accounts: {
         mnemonic: mnemonic(),
       },
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      blockExplorer: 'https://kovan.etherscan.io',
       accounts: {
         mnemonic: mnemonic(),
       },
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      blockExplorer: 'https://ropsten.etherscan.io',
       accounts: {
         mnemonic: mnemonic(),
       },
     },
-    matictestnet: {
-      url: 'https://rpc-mumbai.maticvigil.com',
+    polygontestnet: {
+      url: 'https://matic-mumbai.chainstacklabs.com',
+      blockExplorer: 'https://mumbai.polygonscan.com',
       accounts: {
         mnemonic: mnemonic(),
       },

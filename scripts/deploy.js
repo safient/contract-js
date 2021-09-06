@@ -13,7 +13,7 @@ const abiEncodeArgs = (deployed, contractArgs) => {
 };
 
 const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) => {
-  console.log(` 🛰  Deploying: ${contractName}`);
+  console.log(' 📡  Deploying ', chalk.cyan(`${contractName}`), 'to', chalk.green(`${network}...\n`));
 
   fs.mkdir('src/abis', { recursive: true }, (err) => {
     if (err) throw err;
@@ -40,34 +40,25 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
     extraGasInfo = `${utils.formatEther(gasUsed)} ETH, tx hash ${deployed.deployTransaction.hash}`;
   }
 
-  console.log(' 📄', chalk.cyan(contractName), 'deployed to:', chalk.magenta(deployed.address));
+  console.log(' 📄', chalk.cyan(contractName), 'deployed at:', chalk.magenta(deployed.address));
   console.log(' ⛽', chalk.grey(extraGasInfo), '\n');
 
-  if (network === 'localhost') {
-    networks.localhost.addresses[`${contractName}`] = String(deployed.address);
-  } else {
+  if (network !== 'localhost') {
     networks[`${network}`].addresses.AutoAppealableArbitrator = String(arbitratorAddress);
-    networks[`${network}`].addresses.SafientMain = String(deployed.address);
   }
+  networks[`${network}`].addresses[`${contractName}`] = String(deployed.address);
 
   fs.writeFileSync('./src/utils/networks.json', JSON.stringify(networks, null, 2), function writeJSON(err) {
     if (err) return console.log(err);
   });
 
-  if (hre.config.defaultNetwork !== 'localhost' && hre.config.defaultNetwork !== 'hardhat') {
-    if (hre.config.defaultNetwork === 'matictestnet') {
-      console.log(
-        '\n 🚀 View contract on polygonscan: ',
-        chalk.green(`https://mumbai.polygonscan.com/address/${deployed.address}`),
-        '\n\n'
-      );
+  if (network !== 'localhost' && network !== 'hardhat') {
+    if (network === 'polygontestnet') {
+      console.log(' 🚀 View contract on polygonscan: ');
     } else {
-      console.log(
-        '\n 🚀 View contract on etherscan: ',
-        chalk.green(`https://${hre.config.defaultNetwork}.etherscan.io/address/${deployed.address}`),
-        '\n\n'
-      );
+      console.log(' 🚀 View contract on etherscan: ');
     }
+    console.log('   ', chalk.green(`${hre.config.networks[network].blockExplorer}/address/${deployed.address}`));
   }
 
   if (!encoded || encoded.length <= 2) return deployed;
@@ -78,8 +69,6 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
 };
 
 async function main() {
-  console.log(' 📡 Deploying...\n');
-
   if (network === 'localhost') {
     const arbitrator = await deploy(arbitratorContract, [arbitrationFee]);
     await deploy(arbitrableContract, [arbitrator.address]);
@@ -87,7 +76,7 @@ async function main() {
     await deploy(arbitrableContract, [arbitratorAddress]);
   }
 
-  console.log(' 💾  Artifacts (address, abi, and args) saved to: ', chalk.blue('./artifacts'), '\n\n');
+  console.log(' \n 💾  Artifacts (address, abi, and args) saved to: ', chalk.blue('./artifacts'), '\n');
 }
 
 main()

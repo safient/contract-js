@@ -16,29 +16,29 @@
   "rinkeby": {
     "chainId": 4,
     "addresses": {
-      "AutoAppealableArbitrator": "0x269C347C6F15d18C8292CB1B8Fc91df9ddAE9883",
-      "SafientMain": "0xDf4B9607982FAa4D288ae067D2b15C3295681569"
+      "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
+      "SafientMain": "0x2fF492C5D9d071a2bed17e30418aF128f22e42fA"
     }
   },
   "kovan": {
     "chainId": 42,
     "addresses": {
-      "AutoAppealableArbitrator": "0x269C347C6F15d18C8292CB1B8Fc91df9ddAE9883",
-      "SafientMain": "0xCeEc34c3C72a2f15939bE9d5457b9D1986BC4424"
+      "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
+      "SafientMain": "0xefa7ECd3cd8c2bFe71E8790Da8ce3FeE945044A7"
     }
   },
   "ropsten": {
     "chainId": 3,
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
-      "SafientMain": "0xDf4B9607982FAa4D288ae067D2b15C3295681569"
+      "SafientMain": "0xC0B0591Eac7887F443cef0f28BB818E454eD6637"
     }
   },
-  "matictestnet": {
+  "polygontestnet": {
     "chainId": 80001,
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
-      "SafientMain": "0xC0B0591Eac7887F443cef0f28BB818E454eD6637"
+      "SafientMain": "0xccA53824ce8944a3cB7b21139bd177DEEe6e27C0"
     }
   }
 }
