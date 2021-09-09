@@ -30,7 +30,7 @@ Terminal 1
   npm run chain
 ```
 
-Terminal 2
+Terminal 1
 
 ```bash
   npm run deploy-sdk
