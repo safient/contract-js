@@ -2,7 +2,7 @@
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
-## Installation
+## Local installation
 
 ```bash
   git clone https://github.com/safient/safient-contract-js.git
@@ -12,40 +12,31 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
 ## Running Tests
 
-Create an .env file in the root dtrectory with INFURA_API_KEY
+Create an .env file in the root dtrectory with `INFURA_API_KEY` for mainnet or testnet deployment.
 
-#### Test Contract
+#### Testing the contracts
 
-Terminal
 
 ```bash
   npm run test-contract
 ```
 
-#### Test SDK
+#### Testing the JS SDK
 
-Terminal 1
+Run a local blockchain
 
 ```bash
   npm run chain
 ```
 
-Terminal 1
+Deploy the contract, build the run the tests on a different terminal
 
 ```bash
   npm run deploy-sdk
   npm run test-sdk
 ```
 
-#### Test Contract & SDK
-
-Terminal 1
-
-```bash
-  npm run chain
-```
-
-Terminal 2
+#### Testing the contract & SDK
 
 ```bash
   npm run deploy-sdk
@@ -55,7 +46,7 @@ Terminal 2
 ## Getting started
 
 ```bash
-  npm i @safient/claims
+  npm i @safient/contracts
 ```
 
 ## Usage

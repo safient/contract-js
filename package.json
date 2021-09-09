@@ -1,5 +1,5 @@
 {
-  "name": "@safient/claims",
+  "name": "@safient/contracts",
   "version": "0.1.7",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
@@ -25,7 +25,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/safient/safient-claims-js"
+    "url": "git+https://github.com/safient/safient-contract-js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
