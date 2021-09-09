@@ -5,7 +5,7 @@ const { solidity } = require('ethereum-waffle');
 use(solidity);
 
 describe('SafientMain', async () => {
-  let autoAppealableArbitrator, claims, safientMain, safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX;
+  let autoAppealableArbitrator, safientMain, safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX;
   const safeId1 = '01234567890'; // ArbitrationBased claim
   const safeId2 = '01234567891'; // SignalBased claim (owner won't signal)
   const safeId3 = '01234567892'; // SignalBased claim (owner will signal)
@@ -15,7 +15,7 @@ describe('SafientMain', async () => {
     ArbitrationBased: 1,
   };
 
-  describe('SafientMain Contract Test Flow', async () => {
+  describe('SafientMain Test Flow', async () => {
     it('Should deploy SafientMain', async () => {
       [safientMainAdminAndArbitrator, safeCreator, beneficiary, accountX] = await ethers.getSigners();
 

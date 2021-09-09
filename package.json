@@ -14,10 +14,11 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile",
     "chain": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.js",
+    "deploy-sdk": "npm run deploy && npm run build",
     "test-contract": "hardhat test --network hardhat",
-    "test-sdk": "mocha SDKTest.js --timeout 100000",
+    "test-sdk": "mocha test-sdk/claims.js --timeout 100000",
     "tests": "npm run test-contract && npm run test-sdk",
-    "deploy": "hardhat run scripts/deploy.js && npx tsc",
     "generate": "hardhat generate",
     "account": "hardhat account",
     "build": "tsc -p tsconfig.json"
