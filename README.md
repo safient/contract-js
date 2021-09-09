@@ -2,7 +2,7 @@
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
-## Installation
+## Local installation
 
 ```bash
   git clone https://github.com/safient/safient-contract-js.git
@@ -12,25 +12,41 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 
 ## Running Tests
 
-Create an .env file in the root dtrectory with INFURA_API_KEY
+Create an .env file in the root dtrectory with `INFURA_API_KEY` for mainnet or testnet deployment.
 
-Terminal 1
+#### Testing the contracts
+
+
+```bash
+  npm run test-contract
+```
+
+#### Testing the JS SDK
+
+Run a local blockchain
 
 ```bash
   npm run chain
 ```
 
-Terminal 2
+Deploy the contract, build the run the tests on a different terminal
 
 ```bash
-  npm run deploy
+  npm run deploy-sdk
+  npm run test-sdk
+```
+
+#### Testing the contract & SDK
+
+```bash
+  npm run deploy-sdk
   npm run tests
 ```
 
 ## Getting started
 
 ```bash
-  npm i @safient/claims
+  npm i @safient/contracts
 ```
 
 ## Usage
@@ -162,7 +178,7 @@ const syncSafe = async (creatorAddress, safeIdOnThreadDB, claimType, signalingPe
 | :----------------- | :------- | :------------------------------------------------------------------------------- |
 | `creatorAddress`   | `string` | **Required**. Address of the creator who created the safe offchain               |
 | `safeIdOnThreadDB` | `string` | **Required**. Safe Id on threadDB                                                |
-| `claimType`        | `string` | **Required**. Type of claim the inheritor has go through                         |
+| `claimType`        | `string` | **Required**. Type of claim the inheritor has to go through                      |
 | `signalingPeriod`  | `string` | Number of days within which the safe creator is willing to send a signal         |
 | `metaevidenceURI`  | `string` | IPFS URI pointing to the metaevidence related to arbitration details             |
 | `value`            | `string` | **Required**. Safe maintanence fee in **Gwei**, minimum arbitration fee required |
@@ -356,18 +372,19 @@ const getSafeBySafeId = async (safeIdOnThreadDB) => {
 
 > Type **Safe**
 
-| Property           | Type       | Description                                           |
-| :----------------- | :--------- | :---------------------------------------------------- |
-| `safeId`           | `string`   | Safe Id on threadDB                                   |
-| `safeCreatedBy`    | `string`   | Address of the safe creator                           |
-| `safeCurrentOwner` | `string`   | Address of the current safe owner                     |
-| `safeBeneficiary`  | `string`   | Address of the safe beneficiary                       |
-| `signalingPeriod`  | `Bigumber` | Number of days before which signal should be given    |
-| `endSignalTime`    | `Bigumber` | End timestamp before which signal should be given     |
-| `latestSignalTime` | `Bigumber` | Timestamp at which signal is given                    |
-| `metaEvidenceId`   | `Bigumber` | Id used to uniquely identify a piece of meta-evidence |
-| `claimsCount`      | `Bigumber` | Number of claims made on this safe                    |
-| `safeFunds`        | `Bigumber` | Total safe funds in **Gwei**                          |
+| Property           | Type        | Description                                                 |
+| :----------------- | :---------- | :---------------------------------------------------------- |
+| `id`               | `string`    | Safe Id on threadDB                                         |
+| `createdBy`        | `string`    | Address of the safe creator                                 |
+| `currentOwner`     | `string`    | Address of the current safe owner                           |
+| `beneficiary`      | `string`    | Address of the safe beneficiary                             |
+| `signalingPeriod`  | `Bigumber`  | Number of days before which signal should be given          |
+| `endSignalTime`    | `Bigumber`  | End timestamp before which signal should be given           |
+| `latestSignalTime` | `Bigumber`  | Timestamp at which signal is given                          |
+| `claimType`        | `ClaimType` | Type of claim **0 - SignalBased**, **1 - ArbitrationBased** |
+| `metaEvidenceId`   | `Bigumber`  | Id used to uniquely identify a piece of meta-evidence       |
+| `claimsCount`      | `Bigumber`  | Number of claims made on this safe                          |
+| `funds`            | `Bigumber`  | Total safe funds in **Gwei**                                |
 
 #### Get Claim By Claim Id
 
@@ -396,15 +413,14 @@ const getClaimByClaimId = async (claimId) => {
 
 > Type **Claim**
 
-| Property          | Type        | Description                                                                    |
-| :---------------- | :---------- | :----------------------------------------------------------------------------- |
-| `claimType`       | `BigNumber` | Type of claim **0 - SignalBased**, **1 - ArbitrationBased**                    |
-| `disputeId`       | `BigNumber` | Id of the dispute representing the claim                                       |
-| `claimedBy`       | `string`    | Address of the claim creator                                                   |
-| `metaEvidenceId`  | `BigNumber` | Id used to uniquely identify a piece of meta-evidence                          |
-| `evidenceGroupId` | `Bigumber`  | Id used to identify a group of evidence related to a dispute                   |
-| `status`          | `BigNumber` | Claim status represented by **0**, **1**, **2** or **3**                       |
-| `result`          | `string`    | Claim result represented by **Passed**, **Failed** or **Refused To Arbitrate** |
+| Property          | Type          | Description                                                                                   |
+| :---------------- | :------------ | :-------------------------------------------------------------------------------------------- |
+| `id`              | `BigNumber`   | Id of the claim                                                                               |
+| `claimedBy`       | `string`      | Address of the claim creator                                                                  |
+| `claimType`       | `ClaimType`   | Type of claim **0 - SignalBased**, **1 - ArbitrationBased**                                   |
+| `metaEvidenceId`  | `BigNumber`   | Id used to uniquely identify a piece of meta-evidence                                         |
+| `evidenceGroupId` | `Bigumber`    | Id used to identify a group of evidence related to a dispute                                  |
+| `status`          | `ClaimStatus` | Claim status represented by **0 - Active**, **1 - Passed**, **2 - Failed** or **3 - Refused** |
 
 #### Get Claim Status
 

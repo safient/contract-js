@@ -10,12 +10,10 @@ chai.use(require('chai-as-promised'));
 const metaevidenceOrEvidenceURI =
   'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/';
 
-const { SafientClaims, Types } = require('./dist/index');
+const { SafientClaims, Types } = require('../dist/index');
 
 describe('safientMain', async () => {
-  const safeId1OnThreadDB = '123456789a',
-    safeId2OnThreadDB = '123456789b',
-    safeId3OnThreadDB = '123456789c';
+  let safeId = [];
   let provider, chainId;
   let safientMainAdminSigner,
     safeCreatorSigner,
@@ -23,9 +21,15 @@ describe('safientMain', async () => {
     accountXSigner,
     safeCreatorAddress,
     beneficiaryAddress;
+  let claimIdOfSafeId0, claimIdOfSafeId1, claimIdOfSafeId2;
 
-  describe('SafientClaims SDK Test Flow', async () => {
+  describe('Safient Claims Test Flow', async () => {
     before(async () => {
+      // Random safe id's
+      for (let i = 0; i < 3; i++) {
+        safeId.push(Math.random().toString(36).substr(2, 5));
+      }
+
       // Provider and ChainId
       provider = new JsonRpcProvider('http://localhost:8545');
       const providerNetworkData = await provider.getNetwork();
@@ -47,20 +51,25 @@ describe('safientMain', async () => {
       const arbitrationFee = await sc.arbitrator.getArbitrationFee(); // 0.001 ETH
       const guardianFee = 0.01; // 0.01 ETH
 
+      const beforeTotalNumberOfSafes = await sc.safientMain.getTotalNumberOfSafes();
+      const beforeContractBalance = await sc.safientMain.getContractBalance();
+
       // SUCCESS : create a safe
       await sc.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
-        safeId1OnThreadDB,
+        safeId[0],
         Types.ClaimType.ArbitrationBased,
         0, // 0 seconds because opting ArbitrationBased
         metaevidenceOrEvidenceURI,
         String(ethers.utils.parseEther(String(arbitrationFee + guardianFee)))
       );
 
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(1);
-      expect(await sc.safientMain.getContractBalance()).to.equal(0.011);
+      const afterContractBalance = await sc.safientMain.getContractBalance();
 
-      const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
+      expect(afterContractBalance).to.equal(beforeContractBalance + 0.011);
+      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(beforeTotalNumberOfSafes + 1);
+
+      const safe = await sc.safientMain.getSafeBySafeId(safeId[0]);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
       expect(ethers.utils.formatEther(safe.funds)).to.equal('0.011');
       expect(Number(safe.signalingPeriod)).to.equal(0); // 0 seconds
@@ -84,7 +93,7 @@ describe('safientMain', async () => {
       await expect(
         sc.safientMain.createSafe(
           '0x0',
-          safeId1OnThreadDB,
+          safeId[0],
           Types.ClaimType.ArbitrationBased,
           0,
           metaevidenceOrEvidenceURI,
@@ -96,7 +105,7 @@ describe('safientMain', async () => {
       await expect(
         sc.safientMain.createSafe(
           safeCreatorAddress,
-          safeId1OnThreadDB,
+          safeId[0],
           Types.ClaimType.ArbitrationBased,
           0, // 0 seconds (6 * 0) because opting ArbitrationBased
           metaevidenceOrEvidenceURI,
@@ -108,20 +117,21 @@ describe('safientMain', async () => {
     it('Should allow safe beneficiaries to create a safe (syncSafe)', async () => {
       const sc = new SafientClaims(beneficiarySigner, chainId);
 
+      const beforeTotalNumberOfSafes = await sc.safientMain.getTotalNumberOfSafes();
+
       // SUCCESS : create a safe(for claimType - SignalBased & signal - won't signal)
       await sc.safientMain.syncSafe(
         safeCreatorAddress, // 2nd account
-        safeId2OnThreadDB,
+        safeId[1],
         Types.ClaimType.SignalBased,
         6, // 6 seconds because opting SignalBased
         '', // no metaevidence because SignalBased
         '' // no safe maintenence fee because SignalBased
       );
 
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(2);
-      expect(await sc.safientMain.getContractBalance()).to.equal(0.011);
+      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(beforeTotalNumberOfSafes + 1);
 
-      const safe = await sc.safientMain.getSafeBySafeId(safeId2OnThreadDB);
+      const safe = await sc.safientMain.getSafeBySafeId(safeId[1]);
       expect(safe.createdBy).to.equal(safeCreatorAddress);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
       expect(Number(safe.signalingPeriod)).to.equal(6); // 6 seconds
@@ -133,7 +143,7 @@ describe('safientMain', async () => {
       const sc2 = new SafientClaims(safeCreatorSigner, chainId);
       await sc2.safientMain.createSafe(
         beneficiaryAddress, // 2nd account
-        safeId3OnThreadDB,
+        safeId[2],
         Types.ClaimType.SignalBased,
         6,
         '',
@@ -146,51 +156,64 @@ describe('safientMain', async () => {
       sc = new SafientClaims(accountXSigner, chainId);
 
       // FAILURE : only beneficiary of the safe can create the claim
-      await expect(sc.safientMain.createClaim(safeId1OnThreadDB, metaevidenceOrEvidenceURI)).to.be.rejectedWith(Error);
+      await expect(sc.safientMain.createClaim(safeId[0], metaevidenceOrEvidenceURI)).to.be.rejectedWith(Error);
 
       sc = new SafientClaims(beneficiarySigner, chainId);
 
       // FAILURE : safe does not exist
       await expect(sc.safientMain.createClaim('123', metaevidenceOrEvidenceURI)).to.be.rejectedWith(Error);
 
+      const beforeTotalNumberOfClaims = await sc.safientMain.getTotalNumberOfClaims();
+
       // SUCCESS : create a claim (ArbitrationBased) on safeId1
-      await sc.safientMain.createClaim(safeId1OnThreadDB, metaevidenceOrEvidenceURI);
+      const tx = await sc.safientMain.createClaim(safeId[0], metaevidenceOrEvidenceURI);
+      const txReceipt = await tx.wait();
+      claimIdOfSafeId0 = txReceipt.events[2].args[2];
 
-      expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(1);
-      expect(await sc.safientMain.getContractBalance()).to.equal(0.01);
+      expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(beforeTotalNumberOfClaims + 1);
 
-      const claim1 = await sc.safientMain.getClaimByClaimId(0);
-      expect(claim1.id).to.equal(0);
-      expect(claim1.claimedBy).to.equal(beneficiaryAddress);
+      const claimOnSafeId0 = await sc.safientMain.getClaimByClaimId(claimIdOfSafeId0);
+      expect(claimOnSafeId0.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId0.status).to.equal(0);
     });
 
     it('Should allow beneficiaries to create a claim (SignalBased)', async () => {
       const sc = new SafientClaims(beneficiarySigner, chainId);
 
+      let tx, txReceipt;
+
       // SUCCESS : create claim on safeId2
-      await sc.safientMain.createClaim(safeId2OnThreadDB, '');
-      const safeWithSafeId2 = await sc.safientMain.getSafeBySafeId(safeId2OnThreadDB);
-      expect(safeWithSafeId2.claimsCount).to.equal(1);
-      const claimOnSafeId2 = await sc.safientMain.getClaimByClaimId(2);
-      expect(claimOnSafeId2.id).to.equal(2);
-      expect(claimOnSafeId2.claimedBy).to.equal(beneficiaryAddress);
+      tx = await sc.safientMain.createClaim(safeId[1], '');
+      txReceipt = await tx.wait();
+      claimIdOfSafeId1 = txReceipt.events[0].args[2];
+
+      const safeWithSafeId1 = await sc.safientMain.getSafeBySafeId(safeId[1]);
+      expect(safeWithSafeId1.claimsCount).to.equal(1);
+
+      const claimOnSafeId1 = await sc.safientMain.getClaimByClaimId(claimIdOfSafeId1);
+      expect(claimOnSafeId1.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId1.status).to.equal(0);
 
       // SUCCESS : create claim on safeId3
-      await sc.safientMain.createClaim(safeId3OnThreadDB, '');
-      const safeWithSafeId3 = await sc.safientMain.getSafeBySafeId(safeId3OnThreadDB);
-      expect(safeWithSafeId3.claimsCount).to.equal(1);
-      const claimOnSafeId3 = await sc.safientMain.getClaimByClaimId(3);
-      expect(claimOnSafeId3.id).to.equal(3);
-      expect(claimOnSafeId3.claimedBy).to.equal(beneficiaryAddress);
+      tx = await sc.safientMain.createClaim(safeId[2], '');
+      txReceipt = await tx.wait();
+      claimIdOfSafeId2 = txReceipt.events[0].args[2];
+
+      const safeWithSafeId2 = await sc.safientMain.getSafeBySafeId(safeId[2]);
+      expect(safeWithSafeId2.claimsCount).to.equal(1);
+
+      const claimOnSafeId2 = await sc.safientMain.getClaimByClaimId(claimIdOfSafeId2);
+      expect(claimOnSafeId2.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId2.status).to.equal(0);
     });
 
     it('Should allow safe creator to SIGNAL when the safe is claimed', async () => {
       const sc = new SafientClaims(safeCreatorSigner, chainId);
 
       // SUCCESS: Signal safeId3 - results in a failed claim
-      await sc.safientMain.sendSignal(safeId3OnThreadDB);
+      await sc.safientMain.sendSignal(safeId[2]);
 
-      const safeWithSafeId3 = await sc.safientMain.getSafeBySafeId(safeId3OnThreadDB);
+      const safeWithSafeId3 = await sc.safientMain.getSafeBySafeId(safeId[2]);
       expect(Number(safeWithSafeId3.latestSignalTime)).greaterThan(0);
 
       // mine a new block after 6 seconds
@@ -202,33 +225,36 @@ describe('safientMain', async () => {
       const result = await mineNewBlock;
 
       // check claim status (ArbitrationBased & SignalBased)
-      const safeId1ClaimResult = await sc.safientMain.getClaimStatus(safeId1OnThreadDB, 0);
+      const safeId1ClaimResult = await sc.safientMain.getClaimStatus(safeId[0], claimIdOfSafeId0);
       expect(safeId1ClaimResult).to.equal(0); // claim is Active (Kleros has not given a ruling yet)
 
-      const safeId2ClaimResult = await sc.safientMain.getClaimStatus(safeId2OnThreadDB, 2);
+      const safeId2ClaimResult = await sc.safientMain.getClaimStatus(safeId[1], claimIdOfSafeId1);
       expect(safeId2ClaimResult).to.equal(1); // claim is Passed (safe creator didn't signal)
 
-      const safeId3ClaimResult = await sc.safientMain.getClaimStatus(safeId3OnThreadDB, 3);
+      const safeId3ClaimResult = await sc.safientMain.getClaimStatus(safeId[2], claimIdOfSafeId2);
       expect(safeId3ClaimResult).to.equal(2); // claim is Failed (safe creator gave a signal)
     });
 
     it('Should give ruling on a claim', async () => {
       const sc = new SafientClaims(safientMainAdminSigner, chainId);
 
-      const result = await sc.arbitrator.giveRulingCall(0, 1);
-      expect(result).to.equal(true);
+      await sc.arbitrator.giveRulingCall(claimIdOfSafeId0, 1);
 
-      const safeId1ClaimResult = await sc.safientMain.getClaimStatus(safeId1OnThreadDB, 0);
+      const safeId1ClaimResult = await sc.safientMain.getClaimStatus(safeId[0], claimIdOfSafeId0);
       expect(safeId1ClaimResult).to.equal(1); // claim is Passed (Kleros has given a ruling)
     });
 
     it('Should allow users to deposit funds in a safe', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
 
-      // SUCCESS : deposit funds in a safe
-      await sc.safientMain.depositFunds(safeId1OnThreadDB, String(ethers.utils.parseEther('2')));
+      const beforeContractBalance = await sc.safientMain.getContractBalance();
 
-      expect(await sc.safientMain.getContractBalance()).to.equal(2.01);
+      // SUCCESS : deposit funds in a safe
+      await sc.safientMain.depositFunds(safeId[0], String(ethers.utils.parseEther('2')));
+
+      const afterContractBalance = await sc.safientMain.getContractBalance();
+
+      expect(afterContractBalance).to.equal(beforeContractBalance + 2);
     });
 
     it('Should allow current owner of the to withdraw funds in the safe', async () => {
@@ -236,48 +262,52 @@ describe('safientMain', async () => {
       sc = new SafientClaims(accountXSigner, chainId);
 
       // FAILURE : only safe owner can withdraw the funds
-      await expect(sc.safientMain.withdrawFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
+      await expect(sc.safientMain.withdrawFunds(safeId[0])).to.be.rejectedWith(Error);
 
       sc = new SafientClaims(safeCreatorSigner, chainId);
 
-      // SUCCESS : withdraw funds from a safe
-      await sc.safientMain.withdrawFunds(safeId1OnThreadDB);
+      const beforeContractBalance = await sc.safientMain.getContractBalance();
 
-      expect(await sc.safientMain.getContractBalance()).to.equal(0);
+      const safeWithSafeId0 = await sc.safientMain.getSafeBySafeId(safeId[0]);
+      const funds = Number(ethers.utils.formatEther(safeWithSafeId0.funds));
+
+      // SUCCESS : withdraw funds from a safe
+      await sc.safientMain.withdrawFunds(safeId[0]);
+
+      const afterContractBalance = await sc.safientMain.getContractBalance();
+
+      expect(afterContractBalance).to.equal(beforeContractBalance - funds);
 
       // FAILURE : no funds remaining in the safe
-      await expect(sc.safientMain.withdrawFunds(safeId1OnThreadDB)).to.be.rejectedWith(Error);
+      await expect(sc.safientMain.withdrawFunds(safeId[0])).to.be.rejectedWith(Error);
     });
 
     it('Should get the safe by its Safe Id', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
 
-      const safe = await sc.safientMain.getSafeBySafeId(safeId1OnThreadDB);
+      const safe = await sc.safientMain.getSafeBySafeId(safeId[0]);
 
-      expect(safe.id).to.equal(safeId1OnThreadDB);
       expect(safe.createdBy).to.equal(safeCreatorAddress);
-      expect(safe.claimsCount).to.equal(1);
       expect(safe.funds).to.equal(0);
     });
 
     it('Should get the claim by its Claim Id', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
 
-      const claim = await sc.safientMain.getClaimByClaimId(3);
+      const claim = await sc.safientMain.getClaimByClaimId(claimIdOfSafeId0);
 
-      expect(claim.id).to.equal(3);
       expect(claim.claimedBy).to.equal(beneficiaryAddress);
-      expect(claim.claimType).to.equal(0);
+      expect(claim.claimType).to.equal(1);
     });
 
     it('Should get the total number of safes on the contract', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getTotalNumberOfSafes()).to.equal(3);
+      expect(await sc.safientMain.getTotalNumberOfSafes()).to.greaterThan(0);
     });
 
     it('Should get the total number of claims on the contract', async () => {
       const sc = new SafientClaims(accountXSigner, chainId);
-      expect(await sc.safientMain.getTotalNumberOfClaims()).to.equal(3);
+      expect(await sc.safientMain.getTotalNumberOfClaims()).to.greaterThan(0);
     });
 
     it('Should get the SafientMain contract balance', async () => {

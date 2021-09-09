@@ -1,25 +1,28 @@
-import { JsonRpcSigner, TransactionResponse } from '@ethersproject/providers';
+import { JsonRpcSigner } from '@ethersproject/providers';
 import { ContractInterface } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 
 export type Safe = {
-  safeId: string;
-  safeCreatedBy: string;
-  safeCurrentOwner: string;
-  safeBeneficiary: string;
+  id: string;
+  createdBy: string;
+  currentOwner: string;
+  beneficiary: string;
+  signalingPeriod: BigNumber;
+  endSignalTime: BigNumber;
+  latestSignalTime: BigNumber;
+  claimType: ClaimType;
   metaEvidenceId: BigNumber;
   claimsCount: BigNumber;
-  safeFunds: BigNumber;
+  funds: BigNumber;
 };
 
 export type Claim = {
-  safeId: string;
-  disputeId: BigNumber;
+  id: BigNumber;
   claimedBy: string;
+  claimType: ClaimType;
   metaEvidenceId: BigNumber;
   evidenceGroupId: BigNumber;
-  status: number;
-  result: string;
+  status: ClaimStatus;
 };
 
 export type ContractAddress = string;
@@ -27,11 +30,18 @@ export type ContractABI = ContractInterface | object[];
 export type Signer = JsonRpcSigner;
 
 export type RecoveryProof = {
-  secret: string;
-  address: string;
+  secretHash: string;
+  guardianAddress: string;
 };
+
+export enum ClaimStatus {
+  Active,
+  Passed,
+  Failed,
+  Refused,
+}
 
 export enum ClaimType {
   SignalBased,
-  ArbitrationBased
+  ArbitrationBased,
 }
