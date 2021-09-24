@@ -1,13 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.0;
 
 import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
 
+/**
+ * @title Safient Protocol's Safes contract
+ * @notice This contract implements functions for creating and interacting
+ * with the safient safes
+ */
 contract Safes {
+    /** @notice Total number of safes created */
     uint256 public safesCount;
+
+    /**
+     * @notice Total number of metaevidence's created
+     * @dev metaEvidenceID is incremented when a new safe is created irrespective
+     * of it's claimType
+     */
     uint256 public metaEvidenceID;
+
+    /** @notice Maps each safe with it's id */
     mapping(string => Types.Safe) public safes;
 
     constructor() {
@@ -93,6 +106,14 @@ contract Safes {
         uint256 indexed metaEvidenceId
     );
 
+    /**
+     * @notice Create a new safe by the safe creator
+     * @param _beneficiary Address of the safe beneficiary
+     * @param _safeId Id of the safe
+     * @param _claimType Type of the claim
+     * @param _signalingPeriod Signaling time window
+     * @param _metaEvidence URL of the metaevidence
+     */
     function _createSafe(
         address _beneficiary,
         string memory _safeId,
@@ -130,6 +151,14 @@ contract Safes {
         return true;
     }
 
+    /**
+     * @notice Create a new safe by the safe beneficiary
+     * @param _creator Address of the safe creator
+     * @param _safeId Id of the safe
+     * @param _claimType Type of the claim
+     * @param _signalingPeriod Signaling time window
+     * @param _metaEvidence URL of the metaevidence
+     */
     function _syncSafe(
         address _creator,
         string memory _safeId,
@@ -167,6 +196,10 @@ contract Safes {
         return true;
     }
 
+    /**
+     * @notice Deposit funds into a safe
+     * @param _safeId Id of the safe
+     */
     function _depositFunds(string memory _safeId)
         internal
         depositSafeFunds(_safeId)
@@ -182,6 +215,10 @@ contract Safes {
         return true;
     }
 
+    /**
+     * @notice Withdraw funds from the safe
+     * @param _safeId Id of the safe
+     */
     function _withdrawFunds(string memory _safeId)
         internal
         withdrawSafeFunds(_safeId)
@@ -202,6 +239,11 @@ contract Safes {
         return true;
     }
 
+    /**
+     * @notice Signal the safe in response to the claim made on
+     * the safe
+     * @param _safeId Id of the safe
+     */
     function _sendSignal(string memory _safeId)
         internal
         signal(_safeId)

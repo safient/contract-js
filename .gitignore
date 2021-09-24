@@ -7,6 +7,8 @@ cache
 
 mnemonic.txt
 
+docs
+
 # local env files
 .env
 .env.local

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.0;
 
 import "./components/Safes.sol";
 import "./components/Claims.sol";
@@ -9,21 +8,41 @@ import "./interfaces/IArbitrator.sol";
 import "./interfaces/IArbitrable.sol";
 import "./libraries/Types.sol";
 
+/**
+ * @title Safient Protocol's main contract
+ * @notice This contract implements the public and external interface for
+ * the Safient Protocol to create and interact with Safes and Claims
+ */
 contract SafientMain is Safes, Claims, Guardians, IArbitrable {
+    /** Address of the arbitrator */
     IArbitrator public arbitrator;
-    address public admin;
 
+    /**
+     * @notice Constructor sets the address of the arbitrator
+     * @param _arbitrator address of the arbitrator
+     */
     constructor(IArbitrator _arbitrator) {
         arbitrator = _arbitrator;
-        admin = msg.sender;
     }
 
     receive() external payable {}
 
+    /**
+     * @notice Get the contract balance
+     * @return Balance of the contract
+     */
     function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 
+    /**
+     * @notice Create a new safe by the safe creator
+     * @param _beneficiary Address of the safe beneficiary
+     * @param _safeId Id of the safe
+     * @param _claimType Type of the claim
+     * @param _signalingPeriod Signaling time window
+     * @param _metaEvidence URL of the metaevidence
+     */
     function createSafe(
         address _beneficiary,
         string memory _safeId,
@@ -41,6 +60,14 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
             );
     }
 
+    /**
+     * @notice Create a new safe by the safe beneficiary
+     * @param _creator Address of the safe creator
+     * @param _safeId Id of the safe
+     * @param _claimType Type of the claim
+     * @param _signalingPeriod Signaling time window
+     * @param _metaEvidence URL of the metaevidence
+     */
     function syncSafe(
         address _creator,
         string memory _safeId,
@@ -58,6 +85,11 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
             );
     }
 
+    /**
+     * @notice Create a claim on a safe
+     * @param _safeId Id of the safe
+     * @param _evidence URL of the evidence
+     */
     function createClaim(string memory _safeId, string calldata _evidence)
         external
         payable
@@ -103,6 +135,11 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         return true;
     }
 
+    /**
+     * @notice Submit the evidence for arbitration based claims
+     * @param _disputeID Dispute id of the claim
+     * @param _evidence URL of the evidence
+     */
     function submitEvidence(uint256 _disputeID, string calldata _evidence)
         external
         returns (bool)
@@ -110,12 +147,21 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         return _submitEvidence(_disputeID, _evidence, arbitrator);
     }
 
+    /**
+     * @notice Give a ruling on an arbitration based claim
+     * @param _disputeID Dispute id of the claim
+     * @param _ruling Ruling on the claim
+     */
     function rule(uint256 _disputeID, uint256 _ruling) external override {
         _rule(_disputeID, _ruling, arbitrator);
 
         emit Ruling(IArbitrator(msg.sender), _disputeID, _ruling);
     }
 
+    /**
+     * @notice Deposit funds into a safe
+     * @param _safeId Id of the safe
+     */
     function depositFunds(string memory _safeId)
         external
         payable
@@ -124,14 +170,28 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         return _depositFunds(_safeId);
     }
 
+    /**
+     * @notice Withdraw funds from the safe
+     * @param _safeId Id of the safe
+     */
     function withdrawFunds(string memory _safeId) external returns (bool) {
         return _withdrawFunds(_safeId);
     }
 
+    /**
+     * @notice Signal the safe in response to the claim made on
+     * the safe
+     * @param _safeId Id of the safe
+     */
     function sendSignal(string memory _safeId) external returns (bool) {
         return _sendSignal(_safeId);
     }
 
+    /**
+     * @notice Get the status of a claim
+     * @param _safeId Id of the safe
+     * @param _disputeID Id of the claim
+     */
     function getClaimStatus(string memory _safeId, uint256 _disputeID)
         external
         view
@@ -162,6 +222,16 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         }
     }
 
+    /**
+     * @notice Submit the guardian proof
+     * @param _message Message generated during the safe creation and also
+     * signed by the safe creator
+     * @param _signature Signature of the message signed by the creator
+     * @param _guardianproof Array of structs which includes guardian
+     * address and the secret
+     * @param _secrets Array of guardian secrets
+     * @param _safeId Id of the safe
+     */
     function guardianProof(
         string memory _message,
         bytes memory _signature,

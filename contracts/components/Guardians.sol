@@ -1,11 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.0;
 
 import "../libraries/Types.sol";
 import "../libraries/Utils.sol";
 
+/**
+ * @title Safient Protocol's Guardians contract
+ * @notice This contract implements functions for guardian
+ * proofs and guardian incentivization
+ */
 contract Guardians {
+    /**
+     * @notice Submit the guardian proof
+     * @param _message Message generated during the safe creation and also
+     * signed by the safe creator
+     * @param _signature Signature of the message signed by the creator
+     * @param _guardianproof Array of structs which includes guardian
+     * address and the secret
+     * @param _secrets Array of guardian secrets
+     * @param safeCreatedBy Address of the safe creator
+     * @param safeFunds Total funds in the safe
+     */
     function _guardianProof(
         string memory _message,
         bytes memory _signature,

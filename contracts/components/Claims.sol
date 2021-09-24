@@ -1,14 +1,30 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.0;
 
 import "../interfaces/IArbitrator.sol";
 import "../libraries/Types.sol";
 
+/**
+ * @title Safient Protocol's Claims contract
+ * @notice This contract implements functions for creating arbitration based
+ * and signal based claims and includes a rule function to receive
+ * arbitration based ruling
+ */
 contract Claims {
+    /** @notice Total number of claims created */
     uint256 public claimsCount;
+
+    /**
+     * @notice Total number of evidences submitted
+     * @dev evidenceGroupID is only incremented when an arbitration based claim
+     * is created
+     */
     uint256 public evidenceGroupID;
+
+    /** @notice Total number of ruling options */
     uint256 public rulingOptions;
+
+    /** @notice Maps each claim with it's id */
     mapping(uint256 => Types.Claim) public claims;
 
     constructor() {
@@ -98,6 +114,12 @@ contract Claims {
         uint256 indexed id
     );
 
+    /**
+     * @notice Submit evidence for arbitration based claims
+     * @param _disputeID Dispute id of the claim
+     * @param _evidence Evidence URL
+     * @param arbitrator Address of the arbitrator
+     */
     function _submitEvidence(
         uint256 _disputeID,
         string calldata _evidence,
@@ -110,6 +132,12 @@ contract Claims {
         return true;
     }
 
+    /**
+     * @notice Create a new arbitration based claim
+     * @param _safeId Id of the safe
+     * @param _evidence Evidence URL
+     * @param data Includes safe data and arbitration data
+     */
     function _createArbitrationBasedClaim(
         string memory _safeId,
         string calldata _evidence,
@@ -148,6 +176,11 @@ contract Claims {
         return disputeID;
     }
 
+    /**
+     * @notice Create a new signal based claim
+     * @param _safeId Id of the safe
+     * @param data Includes safe data
+     */
     function _createSignalBasedClaim(
         string memory _safeId,
         Types.SignalBasedClaimData memory data
@@ -166,6 +199,12 @@ contract Claims {
         emit CreateClaim(msg.sender, _safeId, claimsCount);
     }
 
+    /**
+     * @notice Give a ruling on an arbitration based claim
+     * @param _disputeID Dispute id of the claim
+     * @param _ruling Ruling on the claim
+     * @param arbitrator Address of the arbitrator
+     */
     function _rule(
         uint256 _disputeID,
         uint256 _ruling,

@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
+pragma solidity >=0.8.0;
 
+/**
+ * @title Utility functions used within the Safient Protocol
+ * @notice This library implements functions that are mainly used in
+ * Safient Protocol's Guardians contract
+ */
 library Utils {
+    /**
+     * @notice Get the hash of a message
+     * @param _message The message
+     */
     function getMessageHash(string memory _message)
         internal
         pure
@@ -10,6 +19,10 @@ library Utils {
         return keccak256(abi.encodePacked(_message));
     }
 
+    /**
+     * @notice Get the ethereum signed message hash
+     * @param _messageHash Hash of the message
+     */
     function getEthSignedMessageHash(bytes32 _messageHash)
         internal
         pure

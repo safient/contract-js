@@ -1,6 +1,6 @@
 {
   "name": "@safient/contracts",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Web3",
@@ -21,7 +21,8 @@
     "tests": "npm run test-contract && npm run test-sdk",
     "generate": "hardhat generate",
     "account": "hardhat account",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "docs": "rm -rf docs && npx typedoc src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -36,6 +37,7 @@
   ],
   "devDependencies": {
     "@types/node": "^15.6.1",
+    "typedoc": "^0.22.4",
     "typescript": "^4.2.4"
   },
   "publishConfig": {
