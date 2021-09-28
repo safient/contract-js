@@ -22,7 +22,8 @@
     "generate": "hardhat generate",
     "account": "hardhat account",
     "build": "tsc -p tsconfig.json",
-    "docs": "rm -rf docs && npx typedoc src/index.ts"
+    "serve:docs": "cd docs && npm install && npm run start",
+    "build:docs": "cd docs && npm install && npm run build"
   },
   "repository": {
     "type": "git",

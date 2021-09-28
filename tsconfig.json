@@ -13,10 +13,6 @@
     "declaration": true,
     "strictPropertyInitialization": false
   },
-  "typedocOptions": {
-    "entryPoints": ["src/index.ts"],
-    "out": "docs"
-  },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts", "*.json"]
 }
