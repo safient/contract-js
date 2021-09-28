@@ -7,7 +7,7 @@ cache
 
 mnemonic.txt
 
-docs
+package-lock.json
 
 # local env files
 .env
@@ -15,3 +15,27 @@ docs
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Docs related
+docs/package-lock.json
+
+# Dependencies
+docs/node_modules
+
+# Production
+docs/build
+
+# Generated files
+docs/.docusaurus
+docs/.cache-loader
+
+# Misc
+docs/.DS_Store
+docs/.env.local
+docs/.env.development.local
+docs/.env.test.local
+docs/.env.production.local
+
+docs/npm-debug.log*
+docs/yarn-debug.log*
+docs/yarn-error.log*
