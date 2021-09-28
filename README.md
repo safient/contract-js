@@ -1,4 +1,4 @@
-# Safient Claims SDK
+# Safient Contracts SDK
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
 

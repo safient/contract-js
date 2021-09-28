@@ -1,6 +1,6 @@
 const { utils } = require('ethers');
 
-const network = 'polygontestnet';
+const network = 'localhost';
 
 // local
 const arbitratorContract = 'AutoAppealableArbitrator';
