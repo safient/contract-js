@@ -22,8 +22,8 @@
     "generate": "hardhat generate",
     "account": "hardhat account",
     "build": "tsc -p tsconfig.json",
-    "serve:docs": "cd docs && npm install && npm run start",
-    "build:docs": "cd docs && npm install && npm run build"
+    "build:docs": "rm -rf dist && npm run build && npm run docs",
+    "docs": "node scripts/make-docs.js"
   },
   "repository": {
     "type": "git",
@@ -37,6 +37,9 @@
     "dist"
   ],
   "devDependencies": {
+    "@microsoft/api-documenter": "^7.13.54",
+    "@microsoft/api-extractor": "^7.18.11",
+    "@types/fs-extra": "^9.0.13",
     "@types/node": "^15.6.1",
     "typedoc": "^0.22.4",
     "typescript": "^4.2.4"
@@ -63,6 +66,7 @@
     "ethereum-waffle": "^3.3.0",
     "ethereumjs-wallet": "0.6.5",
     "ethers": "^5.4.3",
+    "fs-extra": "^10.0.0",
     "hardhat": "^2.5.0",
     "prettier-plugin-solidity": "*",
     "qrcode-terminal": "^0.12.0",
