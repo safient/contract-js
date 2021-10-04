@@ -1,6 +1,7 @@
 import { JsonRpcSigner } from '@ethersproject/providers';
 import { ContractInterface } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
+import { Wallet } from '@ethersproject/wallet';
 
 export type Safe = {
   id: string;
@@ -32,7 +33,7 @@ export type ContractAddress = string;
 export type ContractABI = ContractInterface | object[];
 
  /** @ignore */
-export type Signer = JsonRpcSigner;
+export type Signer = Wallet | JsonRpcSigner;
 
 export type RecoveryProof = {
   secretHash: string;
