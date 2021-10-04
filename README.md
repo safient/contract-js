@@ -72,7 +72,7 @@ const safientMain = new SafientMain(signer, chainId);
 const arbitrator = new Arbitrator(signer, chainId);
 ```
 
-### Building docs
+## Building docs
 
 Update the docs markdown
 
