@@ -25,8 +25,13 @@ export type Claim = {
   status: ClaimStatus;
 };
 
+ /** @ignore */
 export type ContractAddress = string;
+
+ /** @ignore */
 export type ContractABI = ContractInterface | object[];
+
+ /** @ignore */
 export type Signer = JsonRpcSigner;
 
 export type RecoveryProof = {

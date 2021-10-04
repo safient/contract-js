@@ -15,15 +15,15 @@
     "compile": "hardhat compile",
     "chain": "hardhat node",
     "deploy": "hardhat run scripts/deploy.js",
-    "deploy-sdk": "npm run deploy && npm run build",
+    "deploy-sdk": "npm run deploy && npm run tsc",
     "test-contract": "hardhat test --network hardhat",
     "test-sdk": "mocha test-sdk/claims.js --timeout 100000",
     "tests": "npm run test-contract && npm run test-sdk",
     "generate": "hardhat generate",
     "account": "hardhat account",
-    "build": "tsc -p tsconfig.json",
-    "build:docs": "rm -rf dist && npm run build && npm run docs",
-    "docs": "node scripts/make-docs.js"
+    "tsc": "tsc -p tsconfig.json",
+    "build:docs": "cd docs && npm install && npm run build",
+    "serve:docs": "npm run build:docs && cd docs && npm run start"
   },
   "repository": {
     "type": "git",
@@ -37,12 +37,12 @@
     "dist"
   ],
   "devDependencies": {
-    "@microsoft/api-documenter": "^7.13.54",
-    "@microsoft/api-extractor": "^7.18.11",
     "@types/fs-extra": "^9.0.13",
     "@types/node": "^15.6.1",
+    "prettier-plugin-solidity": "*",
     "typedoc": "^0.22.4",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "chalk": "^2.4.2"
   },
   "publishConfig": {
     "access": "public"
@@ -60,7 +60,6 @@
     "bip39": "2.5.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "chalk": "^2.4.2",
     "did-jwt": "^5.6.2",
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.3.0",
@@ -68,7 +67,6 @@
     "ethers": "^5.4.3",
     "fs-extra": "^10.0.0",
     "hardhat": "^2.5.0",
-    "prettier-plugin-solidity": "*",
     "qrcode-terminal": "^0.12.0",
     "ramda": "^0.27.1"
   }
