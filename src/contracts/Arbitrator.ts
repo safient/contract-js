@@ -1,14 +1,26 @@
-import { ContractAddress, ContractABI, Signer } from '../types/Types';
+import { ContractABI, ContractAddress, Signer } from '../types/Types';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import networks from '../utils/networks.json';
 import data from '../abis/AutoAppealableArbitrator.json';
+
+/**
+ * This class implements an interface to interact with the arbitrator contract
+ * to fetch the arbitration details
+ */
 export class Arbitrator {
+  /** @ignore */
   private signer: Signer;
+
+  /** @ignore */
   private arbitratorABI: ContractABI;
+
+  /** @ignore */
   private arbitratorAddress: ContractAddress;
+
+  /** @ignore */
   private logger: Logger;
 
   /**
@@ -29,7 +41,8 @@ export class Arbitrator {
   }
 
   /**
-   * Get the Arbitrator contract instance
+   * This function returns the Arbitrator contract instance associated with the signer
+   * @ignore
    * @returns The Arbitrator contract instance associated with the signer
    */
   private getContractInstance = async (): Promise<Contract> => {
@@ -42,7 +55,7 @@ export class Arbitrator {
   };
 
   /**
-   * Get the arbitration fee
+   * This function returns the arbitration fee
    * @returns The arbitration fee in ETH
    */
   getArbitrationFee = async (): Promise<number> => {
@@ -55,6 +68,7 @@ export class Arbitrator {
     }
   };
 
+  /** @ignore */
   giveRulingCall = async (disputeId: number, ruling: number): Promise<boolean> => {
     try {
       const contract = await this.getContractInstance();

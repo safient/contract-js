@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
+pragma solidity >=0.8.0;
 
 import "../interfaces/IArbitrator.sol";
 
+/**
+ * @title A collection of defined structs and enums
+ * @notice This library defines the various data models that the Safient
+ * Protocol uses
+ */
 library Types {
     enum ClaimStatus {
         Active,

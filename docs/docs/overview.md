@@ -1,3 +1,12 @@
+---
+id: "overview"
+title: "Safient Contracts SDK"
+slug: "/"
+sidebar_label: "Overview"
+sidebar_position: 0
+custom_edit_url: null
+---
+
 # Safient Contracts SDK
 
 JavaScript SDK to manage and interact with the safe claims on Safient protocol.
@@ -10,7 +19,7 @@ JavaScript SDK to manage and interact with the safe claims on Safient protocol.
   npm install
 ```
 
-## Running tests
+## Running Tests
 
 Create a .env file in the root directory with `INFURA_API_KEY` for mainnet or testnet deployment.
 
@@ -70,18 +79,4 @@ import { SafientMain, Arbitrator, Types } from '@safient/contracts';
 
 const safientMain = new SafientMain(signer, chainId);
 const arbitrator = new Arbitrator(signer, chainId);
-```
-
-## Building docs
-
-Update the docs markdown
-
-```
-npm run build:docs
-```
-
-Run the docusaurus website locally
-
-```
-npm run serve:docs
 ```
