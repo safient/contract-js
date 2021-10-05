@@ -23,7 +23,8 @@
     "account": "hardhat account",
     "build": "tsc -p tsconfig.json",
     "build:docs": "cd docs && npm install && npm run build",
-    "serve:docs": "npm run build:docs && cd docs && npm run start"
+    "serve:docs": "npm run build:docs && cd docs && npm run start",
+    "deploy:docs": "npm run build:docs && cd docs && npx docusaurus deploy"
   },
   "repository": {
     "type": "git",
