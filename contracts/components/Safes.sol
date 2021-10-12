@@ -148,7 +148,7 @@ contract Safes {
 
         emit CreateSafe(msg.sender, _beneficiary, metaEvidenceID);
 
-        return true;
+        return sent;
     }
 
     /**
@@ -193,7 +193,7 @@ contract Safes {
 
         emit CreateSafe(_creator, msg.sender, metaEvidenceID);
 
-        return true;
+        return sent;
     }
 
     /**
@@ -212,7 +212,7 @@ contract Safes {
         (bool sent, ) = address(this).call{value: msg.value}("");
         require(sent, "Failed to send Ether");
 
-        return true;
+        return sent;
     }
 
     /**
@@ -236,7 +236,7 @@ contract Safes {
         (bool sent, ) = _to.call{value: funds}("");
         require(sent, "Failed to send Ether");
 
-        return true;
+        return sent;
     }
 
     /**

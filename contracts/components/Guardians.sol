@@ -10,6 +10,18 @@ import "../libraries/Utils.sol";
  * proofs and guardian incentivization
  */
 contract Guardians {
+    /** @notice Maps guardian address to their earned rewards */
+    mapping(address => uint256) public guardianRewards;
+
+    modifier withdrawRewards(uint256 _funds) {
+        require(guardianRewards[msg.sender] != 0, "No rewards remaining");
+        require(
+            guardianRewards[msg.sender] >= _funds,
+            "Funds requested exceeds the total remaining funds"
+        );
+        _;
+    }
+
     /**
      * @notice Submit the guardian proof
      * @param _message Message generated during the safe creation and also
@@ -68,9 +80,10 @@ contract Guardians {
                             keccak256(abi.encodePacked(_secrets[secretIndex]))
                         ) {
                             safeFunds -= guardianValue;
-                            _guardianproof[guardianIndex].guardianAddress.call{
-                                value: guardianValue
-                            }("");
+                            address guardianAddress = _guardianproof[
+                                guardianIndex
+                            ].guardianAddress;
+                            guardianRewards[guardianAddress] += guardianValue;
                         }
                     }
                 }
@@ -79,5 +92,24 @@ contract Guardians {
                 return false;
             }
         }
+    }
+
+    /**
+     * @notice Claim the guardian rewards
+     * @param _funds Total funds need to be claimed
+     */
+    function _claimRewards(uint256 _funds)
+        internal
+        withdrawRewards(_funds)
+        returns (bool)
+    {
+        guardianRewards[msg.sender] -= _funds;
+
+        address _to = msg.sender;
+
+        (bool sent, ) = _to.call{value: _funds}("");
+        require(sent, "Failed to send Ether");
+
+        return sent;
     }
 }

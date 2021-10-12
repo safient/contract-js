@@ -307,4 +307,19 @@ export class SafientMain {
       this.logger.throwError(e.message);
     }
   };
+
+  /**
+   * This function allows the guardians to claim their rewards
+   * @param funds Total funds need to be claimed in Gwei
+   * @returns A transaction response
+   */
+  claimRewards = async (funds: number): Promise<TransactionResponse> => {
+    try {
+      const contract = await this.getContractInstance();
+      this.tx = await contract.claimRewards(funds);
+      return this.tx;
+    } catch (e: any) {
+      this.logger.throwError(e.message);
+    }
+  };
 }
