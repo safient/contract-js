@@ -23,6 +23,9 @@ export class Arbitrator {
   /** @ignore */
   private logger: Logger;
 
+  /** @ignore */
+  private contract: Contract;
+
   /**
    * Arbitrator Constructor
    * @param signer - Signer object
@@ -38,21 +41,9 @@ export class Arbitrator {
     network !== undefined && network.addresses.AutoAppealableArbitrator !== ''
       ? (this.arbitratorAddress = network.addresses.AutoAppealableArbitrator)
       : this.logger.throwError(`Arbitrator contract not deployed on network with chain id: ${chainId}`);
-  }
 
-  /**
-   * This function returns the Arbitrator contract instance associated with the signer
-   * @ignore
-   * @returns The Arbitrator contract instance associated with the signer
-   */
-  private getContractInstance = async (): Promise<Contract> => {
-    try {
-      const contractInstance = new Contract(this.arbitratorAddress, this.arbitratorABI, this.signer);
-      return contractInstance;
-    } catch (e: any) {
-      this.logger.throwError(e.message);
-    }
-  };
+    this.contract = new Contract(this.arbitratorAddress, this.arbitratorABI, this.signer);
+  }
 
   /**
    * This function returns the arbitration fee
@@ -60,8 +51,7 @@ export class Arbitrator {
    */
   getArbitrationFee = async (): Promise<number> => {
     try {
-      const contract = await this.getContractInstance();
-      const arbitrationFee: BigNumber = await contract.arbitrationCost(0x0);
+      const arbitrationFee: BigNumber = await this.contract.arbitrationCost(0x0);
       return Number(formatEther(arbitrationFee));
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -71,8 +61,7 @@ export class Arbitrator {
   /** @ignore */
   giveRulingCall = async (disputeId: number, ruling: number): Promise<boolean> => {
     try {
-      const contract = await this.getContractInstance();
-      await contract.giveRuling(disputeId, ruling);
+      await this.contract.giveRuling(disputeId, ruling);
       return true;
     } catch (e: any) {
       this.logger.throwError(e.message);
