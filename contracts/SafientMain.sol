@@ -240,14 +240,31 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         string memory _safeId
     ) external returns (bool) {
         Types.Safe memory safe = safes[_safeId];
-        return
-            _guardianProof(
-                _message,
-                _signature,
-                _guardianproof,
-                _secrets,
-                safe.createdBy,
-                safe.funds
-            );
+
+        uint256 safeFunds = safe.funds;
+
+        safe.funds = 0;
+        safes[_safeId] = safe;
+
+        bool result = _guardianProof(
+            _message,
+            _signature,
+            _guardianproof,
+            _secrets,
+            safe.createdBy,
+            safeFunds
+        );
+
+        require(result == true, "Invalid guardian proof");
+
+        return result;
+    }
+
+    /**
+     * @notice Claim the guardian rewards
+     * @param _funds Total funds need to be claimed
+     */
+    function claimRewards(uint256 _funds) external returns (bool) {
+        return _claimRewards(_funds);
     }
 }

@@ -28,6 +28,9 @@ export class SafientMain {
   /** @ignore */
   private tx: TransactionResponse;
 
+  /** @ignore */
+  private contract: Contract;
+
   /**
    * Arbitrator Constructor
    * @param signer Signer object
@@ -43,21 +46,9 @@ export class SafientMain {
     network !== undefined && network.addresses.SafientMain !== ''
       ? (this.safientMainAddress = network.addresses.SafientMain)
       : this.logger.throwError(`SafientMain contract not deployed on network with chain id: ${chainId}`);
-  }
 
-  /**
-   * This function returns the SafientMain contract instance associated with the signer
-   * @ignore
-   * @returns The SafientMain contract instance associated with the signer
-   */
-  private getContractInstance = async (): Promise<Contract> => {
-    try {
-      const contractInstance = new Contract(this.safientMainAddress, this.safientMainABI, this.signer);
-      return contractInstance;
-    } catch (e: any) {
-      this.logger.throwError(e.message);
-    }
-  };
+    this.contract = new Contract(this.safientMainAddress, this.safientMainABI, this.signer);
+  }
 
   /**
    * This function creates a new safe by the safe creator
@@ -78,10 +69,16 @@ export class SafientMain {
     value: string
   ): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.createSafe(beneficiaryAddress, safeId, claimType, signalingPeriod, metaevidenceURI, {
-        value,
-      });
+      this.tx = await this.contract.createSafe(
+        beneficiaryAddress,
+        safeId,
+        claimType,
+        signalingPeriod,
+        metaevidenceURI,
+        {
+          value,
+        }
+      );
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -107,8 +104,7 @@ export class SafientMain {
     value: string
   ): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.syncSafe(creatorAddress, safeId, claimType, signalingPeriod, metaevidenceURI, {
+      this.tx = await this.contract.syncSafe(creatorAddress, safeId, claimType, signalingPeriod, metaevidenceURI, {
         value,
       });
       return this.tx;
@@ -125,8 +121,7 @@ export class SafientMain {
    */
   createClaim = async (safeId: string, evidenceURI: string): Promise<TransactionResponse> => {
     try {
-      const contract: Contract = await this.getContractInstance();
-      this.tx = await contract.createClaim(safeId, evidenceURI);
+      this.tx = await this.contract.createClaim(safeId, evidenceURI);
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -141,8 +136,7 @@ export class SafientMain {
    */
   depositFunds = async (safeId: string, value: string): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.depositFunds(safeId, { value });
+      this.tx = await this.contract.depositFunds(safeId, { value });
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -156,8 +150,7 @@ export class SafientMain {
    */
   withdrawFunds = async (safeId: string): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.withdrawFunds(safeId);
+      this.tx = await this.contract.withdrawFunds(safeId);
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -172,8 +165,7 @@ export class SafientMain {
    */
   submitEvidence = async (disputeId: number, evidenceURI: string): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.submitEvidence(disputeId, evidenceURI);
+      this.tx = await this.contract.submitEvidence(disputeId, evidenceURI);
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -187,8 +179,7 @@ export class SafientMain {
    */
   sendSignal = async (safeId: string): Promise<TransactionResponse> => {
     try {
-      const contract = await this.getContractInstance();
-      this.tx = await contract.sendSignal(safeId);
+      this.tx = await this.contract.sendSignal(safeId);
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -203,8 +194,7 @@ export class SafientMain {
    */
   getClaimStatus = async (safeId: string, claimId: number): Promise<number> => {
     try {
-      const contract = await this.getContractInstance();
-      const claimStatus: number = await contract.getClaimStatus(safeId, claimId);
+      const claimStatus: number = await this.contract.getClaimStatus(safeId, claimId);
       return claimStatus;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -218,8 +208,7 @@ export class SafientMain {
    */
   getSafeBySafeId = async (safeId: string): Promise<Safe> => {
     try {
-      const contract = await this.getContractInstance();
-      const safe: Safe = await contract.safes(safeId);
+      const safe: Safe = await this.contract.safes(safeId);
       return safe;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -233,8 +222,7 @@ export class SafientMain {
    */
   getClaimByClaimId = async (claimId: number): Promise<Claim> => {
     try {
-      const contract = await this.getContractInstance();
-      const claim: Claim = await contract.claims(claimId);
+      const claim: Claim = await this.contract.claims(claimId);
       return claim;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -247,8 +235,7 @@ export class SafientMain {
    */
   getTotalNumberOfSafes = async (): Promise<number> => {
     try {
-      const contract = await this.getContractInstance();
-      const totalSafes: BigNumber = await contract.safesCount();
+      const totalSafes: BigNumber = await this.contract.safesCount();
       return Number(totalSafes);
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -261,8 +248,7 @@ export class SafientMain {
    */
   getTotalNumberOfClaims = async (): Promise<number> => {
     try {
-      const contract = await this.getContractInstance();
-      const totalClaims: BigNumber = await contract.claimsCount();
+      const totalClaims: BigNumber = await this.contract.claimsCount();
       return Number(totalClaims);
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -275,8 +261,7 @@ export class SafientMain {
    */
   getContractBalance = async (): Promise<number> => {
     try {
-      const contract = await this.getContractInstance();
-      const mainContractBalance: BigNumber = await contract.getBalance();
+      const mainContractBalance: BigNumber = await this.contract.getBalance();
       return Number(formatEther(mainContractBalance));
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -300,9 +285,36 @@ export class SafientMain {
     safeId: string
   ): Promise<boolean> => {
     try {
-      const contract = await this.getContractInstance();
-      const result: boolean = await contract.guardianProof(message, signature, guardianProof, secrets, safeId);
+      const result: boolean = await this.contract.guardianProof(message, signature, guardianProof, secrets, safeId);
       return result;
+    } catch (e: any) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * This function allows the guardians to claim their rewards
+   * @param funds Total funds need to be claimed in Gwei
+   * @returns A transaction response
+   */
+  claimRewards = async (funds: number): Promise<TransactionResponse> => {
+    try {
+      this.tx = await this.contract.claimRewards(funds);
+      return this.tx;
+    } catch (e: any) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * This function returns the total guardian reward balance of a guardian
+   * @param address The address of the guardian
+   * @returns The total guardian reward balance
+   */
+  getGuardianRewards = async (address: string): Promise<Number> => {
+    try {
+      const guardianReward: BigNumber = await this.contract.guardianRewards(address);
+      return Number(guardianReward);
     } catch (e: any) {
       this.logger.throwError(e.message);
     }
