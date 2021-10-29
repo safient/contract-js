@@ -1,8 +1,17 @@
-import { ContractABI, ContractAddress, Claim, ClaimType, RecoveryProof, Safe, Signer } from '../types/Types';
+import {
+  ContractABI,
+  ContractAddress,
+  Claim,
+  ClaimStatus,
+  ClaimType,
+  RecoveryProof,
+  Safe,
+  Signer,
+} from '../types/Types';
 import { TransactionResponse } from '@ethersproject/providers';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
-import { formatEther } from '@ethersproject/units';
+import { formatEther, parseEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
 import networks from '../utils/networks.json';
@@ -192,9 +201,9 @@ export class SafientMain {
    * @param claimId Id of the claim
    * @returns The status of the claim
    */
-  getClaimStatus = async (safeId: string, claimId: number): Promise<number> => {
+  getClaimStatus = async (safeId: string, claimId: number): Promise<ClaimStatus> => {
     try {
-      const claimStatus: number = await this.contract.getClaimStatus(safeId, claimId);
+      const claimStatus: ClaimStatus = await this.contract.getClaimStatus(safeId, claimId);
       return claimStatus;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -294,12 +303,12 @@ export class SafientMain {
 
   /**
    * This function allows the guardians to claim their rewards
-   * @param funds Total funds need to be claimed in Gwei
+   * @param funds Total funds need to be claimed in ETH
    * @returns A transaction response
    */
   claimRewards = async (funds: number): Promise<TransactionResponse> => {
     try {
-      this.tx = await this.contract.claimRewards(funds);
+      this.tx = await this.contract.claimRewards(parseEther(String(funds)));
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -309,12 +318,12 @@ export class SafientMain {
   /**
    * This function returns the total guardian reward balance of a guardian
    * @param address The address of the guardian
-   * @returns The total guardian reward balance
+   * @returns The total guardian reward balance in ETH
    */
-  getGuardianRewards = async (address: string): Promise<Number> => {
+  getGuardianRewards = async (address: string): Promise<number> => {
     try {
       const guardianReward: BigNumber = await this.contract.guardianRewards(address);
-      return Number(guardianReward);
+      return Number(formatEther(guardianReward));
     } catch (e: any) {
       this.logger.throwError(e.message);
     }
