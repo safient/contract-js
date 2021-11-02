@@ -299,7 +299,7 @@ describe('SafientMain', async () => {
       expect(await safientMain.getBalance()).to.equal(ethers.utils.parseEther('2')); // 2.002 eth
     });
 
-    it('Should allow current owner of the to withdraw funds in the safe', async () => {
+    it('Should allow current owner to withdraw funds in the safe', async () => {
       // FAILURE : safe does not exist
       await expect(safientMain.connect(safeCreator).withdrawFunds('123')).to.be.revertedWith('Safe does not exist');
 

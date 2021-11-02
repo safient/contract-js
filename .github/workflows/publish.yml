@@ -1,10 +1,7 @@
 name: Safient Claims CD
 
 on:
-  # Trigger only for the master branch and on release
-  push:
-    branches:
-      - main
+  # Trigger only on a new release
   release:
     types: [created]
 
