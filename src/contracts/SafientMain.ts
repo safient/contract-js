@@ -65,6 +65,7 @@ export class SafientMain {
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
    * @param signalingPeriod Number of days within which the safe creator is willing to send a signal
+   * @param dDay The timestamp after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -74,6 +75,7 @@ export class SafientMain {
     safeId: string,
     claimType: ClaimType,
     signalingPeriod: number,
+    dDay: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
@@ -83,6 +85,7 @@ export class SafientMain {
         safeId,
         claimType,
         signalingPeriod,
+        dDay,
         metaevidenceURI,
         {
           value,
@@ -100,6 +103,7 @@ export class SafientMain {
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
    * @param signalingPeriod Number of days within which the safe creator is willing to send a signal
+   * @param dDay The timestamp after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -109,13 +113,22 @@ export class SafientMain {
     safeId: string,
     claimType: ClaimType,
     signalingPeriod: number,
+    dDay: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
     try {
-      this.tx = await this.contract.syncSafe(creatorAddress, safeId, claimType, signalingPeriod, metaevidenceURI, {
-        value,
-      });
+      this.tx = await this.contract.syncSafe(
+        creatorAddress,
+        safeId,
+        claimType,
+        signalingPeriod,
+        dDay,
+        metaevidenceURI,
+        {
+          value,
+        }
+      );
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
@@ -324,6 +337,21 @@ export class SafientMain {
     try {
       const guardianReward: BigNumber = await this.contract.guardianRewards(address);
       return Number(formatEther(guardianReward));
+    } catch (e: any) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  /**
+   * This function updates the D-Day of a safe
+   * @param safeId Id of the safe
+   * @param dDay The timestamp after which the beneficiary can directly claim the safe
+   * @returns A transaction response
+   */
+  updateDDay = async (safeId: string, dDay: number): Promise<TransactionResponse> => {
+    try {
+      this.tx = await this.contract.updateDDay(safeId, dDay);
+      return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
     }

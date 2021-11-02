@@ -15,6 +15,7 @@ contract Guardians {
 
     modifier withdrawRewards(uint256 _funds) {
         require(guardianRewards[msg.sender] != 0, "No rewards remaining");
+
         require(
             guardianRewards[msg.sender] >= _funds,
             "Funds requested exceeds the total remaining funds"
