@@ -40,7 +40,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod The time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
      * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
@@ -68,7 +68,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod TThe time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _signalingPeriod TThe time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
      * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */

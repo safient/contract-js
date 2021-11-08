@@ -64,7 +64,7 @@ export class SafientMain {
    * @param beneficiaryAddress Address of the beneficiary who can claim to inherit this safe
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param signalingPeriod The time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+   * @param signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
    * @param dDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
@@ -102,7 +102,7 @@ export class SafientMain {
    * @param creatorAddress Address of the creator who created the safe offchain
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param signalingPeriod The time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+   * @param signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
    * @param dDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
