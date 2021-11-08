@@ -320,13 +320,17 @@ describe('SafientMain', async () => {
     });
 
     it('Should allow beneficiaries to create a claim (D-Day based)', async () => {
+      const latestBlockNumber = await ethers.provider.getBlockNumber();
+      const latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      const now = latestBlock.timestamp;
+
       // create a safe(for claimType - DDayBased)
       await safientMain.connect(safeCreator).createSafe(
         beneficiary.address,
         safeId4,
         ClaimType.DDayBased,
         0, // signaling period - 0 seconds
-        6, // D day - 6 seconds
+        now + 6, // D day - 6 seconds
         ''
       );
 
@@ -368,13 +372,19 @@ describe('SafientMain', async () => {
     });
 
     it('Should allow safe current owner to update the D-Day', async () => {
+      let latestBlockNumber, latestBlock, now;
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
       // create a safe(for claimType - DDayBased)
       await safientMain.connect(safeCreator).createSafe(
         beneficiary.address,
         safeId5,
         ClaimType.DDayBased,
         0, // signaling period - 0 seconds
-        6, // D day - 6 seconds
+        now + 6, // D day - 6 seconds
         ''
       );
 
@@ -388,14 +398,18 @@ describe('SafientMain', async () => {
       const safeId5ClaimResult1 = await safientMain.connect(accountX).getClaimStatus(safeId5, claimID1);
       expect(safeId5ClaimResult1).to.equal(2); // claim got Failed (before D-Day)
 
-      // Update the D-Day - 12 seconds
-      await safientMain.connect(safeCreator).updateDDay(safeId5, 12); // update the D-Day to 12 seconds from the time of updating
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
 
-      // mine a new block after 10 seconds
+      // Update the D-Day - 12 seconds
+      await safientMain.connect(safeCreator).updateDDay(safeId5, now + 12); // update the D-Day to 12 seconds from the time of updating
+
+      // mine a new block after 8 seconds
       const mineNewBlock1 = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(ethers.provider.send('evm_mine'));
-        }, 10000);
+        }, 8000);
       });
       const result1 = await mineNewBlock1;
 
@@ -409,11 +423,11 @@ describe('SafientMain', async () => {
       const safeId5ClaimResult2 = await safientMain.connect(accountX).getClaimStatus(safeId5, claimID2);
       expect(safeId5ClaimResult2).to.equal(2); // claim got Failed (before D-Day)
 
-      // mine a new block after 2 seconds
+      // mine a new block after 4 seconds
       const mineNewBlock2 = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(ethers.provider.send('evm_mine'));
-        }, 2000);
+        }, 4000);
       });
       const result2 = await mineNewBlock2;
 

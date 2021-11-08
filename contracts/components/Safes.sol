@@ -117,6 +117,8 @@ contract Safes {
             msg.sender == safe.currentOwner,
             "Only safe current owner can updade the D Day"
         );
+
+        require(block.timestamp < safe.dDay, "DDay has already passed");
         _;
     }
 
@@ -133,8 +135,8 @@ contract Safes {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
-     * @param _DDay The timestamp after which the beneficiary can directly claim the safe
+     * @param _signalingPeriod The time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function _createSafe(
@@ -159,7 +161,7 @@ contract Safes {
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
-            dDay: block.timestamp + _DDay,
+            dDay: _DDay,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
@@ -181,8 +183,8 @@ contract Safes {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
-     * @param _DDay The timestamp after which the beneficiary can directly claim the safe
+     * @param _signalingPeriod The time window in milliseconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function _syncSafe(
@@ -207,7 +209,7 @@ contract Safes {
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
-            dDay: block.timestamp + _DDay,
+            dDay: _DDay,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
@@ -289,7 +291,7 @@ contract Safes {
     /**
      * @notice Update the D-Day
      * @param _safeId Id of the safe
-     * @param _DDay The timestamp after which the beneficiary can directly claim the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      */
     function _updateDDay(string memory _safeId, uint256 _DDay)
         internal
@@ -298,7 +300,7 @@ contract Safes {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        safe.dDay = block.timestamp + _DDay;
+        safe.dDay = _DDay;
         safes[_safeId] = safe;
 
         return true;
