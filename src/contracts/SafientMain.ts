@@ -305,9 +305,9 @@ export class SafientMain {
     guardianProof: RecoveryProof[],
     secrets: string[],
     safeId: string
-  ): Promise<boolean> => {
+  ): Promise<TransactionResponse> => {
     try {
-      const result: boolean = await this.contract.guardianProof(message, signature, guardianProof, secrets, safeId);
+      const result: TransactionResponse = await this.contract.guardianProof(message, signature, guardianProof, secrets, safeId);
       return result;
     } catch (e: any) {
       this.logger.throwError(e.message);
