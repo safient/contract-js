@@ -1,6 +1,6 @@
 {
   "name": "@safient/contracts",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Web3",
@@ -40,10 +40,10 @@
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
     "@types/node": "^15.6.1",
+    "chalk": "^2.4.2",
     "prettier-plugin-solidity": "*",
     "typedoc": "^0.22.4",
-    "typescript": "^4.2.4",
-    "chalk": "^2.4.2"
+    "typescript": "^4.2.4"
   },
   "publishConfig": {
     "access": "public"
