@@ -33,10 +33,12 @@ contract Safes {
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
+
         require(
             _beneficiary != address(0),
             "Should provide an beneficiary for the safe"
         );
+
         require(
             msg.sender != _beneficiary,
             "Safe creator should not be the beneficiary of the safe"
@@ -49,10 +51,12 @@ contract Safes {
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
+
         require(
             _creator != address(0),
             "Should provide an creator for the safe"
         );
+
         require(
             msg.sender != _creator,
             "Safe should be synced by the beneficiary of the safe"
@@ -62,39 +66,59 @@ contract Safes {
 
     modifier depositSafeFunds(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
+
         require(safe.currentOwner != address(0), "Safe does not exist");
         _;
     }
 
     modifier withdrawSafeFunds(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
+
         require(safe.currentOwner != address(0), "Safe does not exist");
+
         require(
             msg.sender == safe.currentOwner,
             "Only safe owner can withdraw the deposit balance"
         );
+
         require(safe.funds != 0, "No funds remaining in the safe");
         _;
     }
 
     modifier signal(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
+
         require(
             msg.sender == safe.currentOwner,
             "Only safe current owner can send the signal"
         );
+
         require(
             safe.endSignalTime != 0,
             "Safe is not claimed since safe's endSignalTime is zero"
         );
+
         require(
             block.timestamp < safe.endSignalTime,
             "Signaling period is over"
         );
+
         require(
             safe.latestSignalTime == 0,
             "Safe is not claimed since safe's latestSignalTime is not zero"
         );
+        _;
+    }
+
+    modifier DDayUpdate(string memory _safeId) {
+        Types.Safe memory safe = safes[_safeId];
+
+        require(
+            msg.sender == safe.currentOwner,
+            "Only safe current owner can updade the D Day"
+        );
+
+        require(block.timestamp < safe.dDay, "DDay has already passed");
         _;
     }
 
@@ -111,7 +135,8 @@ contract Safes {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
+     * @param _signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function _createSafe(
@@ -119,6 +144,7 @@ contract Safes {
         string memory _safeId,
         Types.ClaimType _claimType,
         uint256 _signalingPeriod,
+        uint256 _DDay,
         string calldata _metaEvidence
     ) internal createSafeByCreator(_safeId, _beneficiary) returns (bool) {
         if (_claimType == Types.ClaimType.ArbitrationBased) {
@@ -135,6 +161,7 @@ contract Safes {
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
+            dDay: _DDay,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
@@ -156,7 +183,8 @@ contract Safes {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
+     * @param _signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function _syncSafe(
@@ -164,6 +192,7 @@ contract Safes {
         string memory _safeId,
         Types.ClaimType _claimType,
         uint256 _signalingPeriod,
+        uint256 _DDay,
         string calldata _metaEvidence
     ) internal syncSafeByBeneficiary(_safeId, _creator) returns (bool) {
         if (_claimType == Types.ClaimType.ArbitrationBased) {
@@ -180,6 +209,7 @@ contract Safes {
             signalingPeriod: _signalingPeriod,
             endSignalTime: 0,
             latestSignalTime: 0,
+            dDay: _DDay,
             claimType: _claimType,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
@@ -253,6 +283,24 @@ contract Safes {
 
         safe.latestSignalTime = block.timestamp;
         safe.endSignalTime = 0;
+        safes[_safeId] = safe;
+
+        return true;
+    }
+
+    /**
+     * @notice Update the D-Day
+     * @param _safeId Id of the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+     */
+    function _updateDDay(string memory _safeId, uint256 _DDay)
+        internal
+        DDayUpdate(_safeId)
+        returns (bool)
+    {
+        Types.Safe memory safe = safes[_safeId];
+
+        safe.dDay = _DDay;
         safes[_safeId] = safe;
 
         return true;

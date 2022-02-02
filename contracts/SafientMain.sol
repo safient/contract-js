@@ -40,7 +40,8 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
+     * @param _signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function createSafe(
@@ -48,6 +49,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         string memory _safeId,
         Types.ClaimType _claimType,
         uint256 _signalingPeriod,
+        uint256 _DDay,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
@@ -56,6 +58,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _safeId,
                 _claimType,
                 _signalingPeriod,
+                _DDay,
                 _metaEvidence
             );
     }
@@ -65,7 +68,8 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod Signaling time window
+     * @param _signalingPeriod TThe time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
      * @param _metaEvidence URL of the metaevidence
      */
     function syncSafe(
@@ -73,6 +77,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         string memory _safeId,
         Types.ClaimType _claimType,
         uint256 _signalingPeriod,
+        uint256 _DDay,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
@@ -81,6 +86,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _safeId,
                 _claimType,
                 _signalingPeriod,
+                _DDay,
                 _metaEvidence
             );
     }
@@ -130,8 +136,18 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
             safe.claimsCount += 1;
             safes[_safeId] = safe;
-        }
+        } else if (safe.claimType == Types.ClaimType.DDayBased) {
+            Types.DDayBasedClaimData memory data = Types.DDayBasedClaimData(
+                safe.currentOwner,
+                safe.beneficiary,
+                safe.dDay
+            );
 
+            _createDDayBasedClaim(_safeId, data);
+
+            safe.claimsCount += 1;
+            safes[_safeId] = safe;
+        }
         return true;
     }
 
@@ -190,17 +206,20 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     /**
      * @notice Get the status of a claim
      * @param _safeId Id of the safe
-     * @param _disputeID Id of the claim
+     * @param _claimId Id of the claim
      */
-    function getClaimStatus(string memory _safeId, uint256 _disputeID)
+    function getClaimStatus(string memory _safeId, uint256 _claimId)
         external
         view
         returns (Types.ClaimStatus status)
     {
         Types.Safe memory safe = safes[_safeId];
 
-        if (safe.claimType == Types.ClaimType.ArbitrationBased) {
-            Types.Claim memory claim = claims[_disputeID];
+        if (
+            safe.claimType == Types.ClaimType.ArbitrationBased ||
+            safe.claimType == Types.ClaimType.DDayBased
+        ) {
+            Types.Claim memory claim = claims[_claimId];
 
             return claim.status;
         } else if (safe.claimType == Types.ClaimType.SignalBased) {
@@ -266,5 +285,17 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      */
     function claimRewards(uint256 _funds) external returns (bool) {
         return _claimRewards(_funds);
+    }
+
+    /**
+     * @notice Update the D-Day
+     * @param _safeId Id of the safe
+     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+     */
+    function updateDDay(string memory _safeId, uint256 _DDay)
+        external
+        returns (bool)
+    {
+        return _updateDDay(_safeId, _DDay);
     }
 }

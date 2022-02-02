@@ -38,14 +38,17 @@ contract Claims {
         Types.ArbitrationBasedClaimData memory data
     ) {
         require(data.currentOwner != address(0), "Safe does not exist");
+
         require(
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
+
         require(
             msg.sender == data.beneficiary,
             "Only beneficiary of the safe can create the claim"
         );
+
         require(
             data.funds >= data.arbitrationCost,
             "Insufficient funds in the safe to pay the arbitration fee"
@@ -58,22 +61,48 @@ contract Claims {
         Types.SignalBasedClaimData memory data
     ) {
         require(data.currentOwner != address(0), "Safe does not exist");
+
         require(
             bytes(_safeId).length > 1,
             "Should provide ID of the safe on threadDB"
         );
+
         require(
             msg.sender == data.beneficiary,
             "Only beneficiary of the safe can create the claim"
         );
+
         require(data.endSignalTime == 0, "Safe end signal time should be zero");
         _;
     }
 
+    modifier dDayBasedClaim(
+        string memory _safeId,
+        Types.DDayBasedClaimData memory data
+    ) {
+        require(data.currentOwner != address(0), "Safe does not exist");
+
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+
+        require(
+            msg.sender == data.beneficiary,
+            "Only beneficiary of the safe can create the claim"
+        );
+
+        require(data.dDay != 0, "D day is not set by the safe's current owner");
+        _;
+    }
+
     modifier evidenceSubmission(uint256 _disputeID, string calldata _evidence) {
-        require(_disputeID <= claimsCount, "Claim or Dispute does not exist");
-        require(bytes(_evidence).length > 1, "Should provide evidence URI");
         Types.Claim memory claim = claims[_disputeID];
+
+        require(_disputeID <= claimsCount, "Claim or Dispute does not exist");
+
+        require(bytes(_evidence).length > 1, "Should provide evidence URI");
+
         require(
             msg.sender == claim.claimedBy,
             "Only creator of the claim can submit the evidence"
@@ -195,6 +224,40 @@ contract Claims {
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Active
         });
+
+        emit CreateClaim(msg.sender, _safeId, claimsCount);
+    }
+
+    /**
+     * @notice Create a new D-Day based claim
+     * @param _safeId Id of the safe
+     * @param data Includes safe data
+     */
+    function _createDDayBasedClaim(
+        string memory _safeId,
+        Types.DDayBasedClaimData memory data
+    ) internal dDayBasedClaim(_safeId, data) {
+        claimsCount += 1;
+
+        if (block.timestamp >= data.dDay) {
+            claims[claimsCount] = Types.Claim({
+                id: claimsCount,
+                claimedBy: msg.sender,
+                claimType: Types.ClaimType.DDayBased,
+                metaEvidenceId: 0,
+                evidenceGroupId: 0,
+                status: Types.ClaimStatus.Passed
+            });
+        } else if (block.timestamp < data.dDay) {
+            claims[claimsCount] = Types.Claim({
+                id: claimsCount,
+                claimedBy: msg.sender,
+                claimType: Types.ClaimType.DDayBased,
+                metaEvidenceId: 0,
+                evidenceGroupId: 0,
+                status: Types.ClaimStatus.Failed
+            });
+        }
 
         emit CreateClaim(msg.sender, _safeId, claimsCount);
     }

@@ -26,13 +26,13 @@ export type Claim = {
   status: ClaimStatus;
 };
 
- /** @ignore */
+/** @ignore */
 export type ContractAddress = string;
 
- /** @ignore */
+/** @ignore */
 export type ContractABI = ContractInterface | object[];
 
- /** @ignore */
+/** @ignore */
 export type Signer = Wallet | JsonRpcSigner;
 
 export type RecoveryProof = {
@@ -50,4 +50,5 @@ export enum ClaimStatus {
 export enum ClaimType {
   SignalBased,
   ArbitrationBased,
+  DDayBased,
 }
