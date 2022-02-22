@@ -133,14 +133,13 @@ contract Claims {
     event Dispute(
         IArbitrator indexed _arbitrator,
         uint256 indexed _disputeID,
-        uint256 _metaEvidenceID,
-        uint256 _evidenceGroupID
+        uint256 _metaEvidenceID
     );
 
     event CreateClaim(
         address indexed createdBy,
-        string indexed safeId,
-        uint256 indexed id
+        uint256 indexed id,
+        uint256 timeStamp
     );
 
     /**
@@ -181,8 +180,7 @@ contract Claims {
         emit Dispute(
             data.arbitrator,
             disputeID,
-            data.metaEvidenceId,
-            evidenceGroupID
+            data.metaEvidenceId
         );
 
         claims[disputeID] = Types.Claim({
@@ -195,9 +193,7 @@ contract Claims {
         });
 
         claimsCount += 1;
-
-        emit CreateClaim(msg.sender, _safeId, disputeID);
-
+        emit CreateClaim(msg.sender,disputeID, block.timestamp);
         if (bytes(_evidence).length != 0) {
             _submitEvidence(disputeID, _evidence, data.arbitrator);
         }
@@ -225,7 +221,7 @@ contract Claims {
             status: Types.ClaimStatus.Active
         });
 
-        emit CreateClaim(msg.sender, _safeId, claimsCount);
+        emit CreateClaim(msg.sender, claimsCount, block.timestamp);
     }
 
     /**
@@ -259,7 +255,7 @@ contract Claims {
             });
         }
 
-        emit CreateClaim(msg.sender, _safeId, claimsCount);
+        emit CreateClaim(msg.sender,claimsCount, block.timestamp);
     }
 
     /**
