@@ -137,7 +137,7 @@ contract Claims {
     );
 
     event CreateClaim(
-        address indexed createdBy,
+        string indexed safeId,
         uint256 indexed id,
         uint256 timeStamp
     );
@@ -193,7 +193,7 @@ contract Claims {
         });
 
         claimsCount += 1;
-        emit CreateClaim(msg.sender,disputeID, block.timestamp);
+        emit CreateClaim(_safeId,disputeID, block.timestamp);
         if (bytes(_evidence).length != 0) {
             _submitEvidence(disputeID, _evidence, data.arbitrator);
         }
@@ -221,7 +221,7 @@ contract Claims {
             status: Types.ClaimStatus.Active
         });
 
-        emit CreateClaim(msg.sender, claimsCount, block.timestamp);
+        emit CreateClaim(_safeId, claimsCount, block.timestamp);
     }
 
     /**
@@ -255,7 +255,7 @@ contract Claims {
             });
         }
 
-        emit CreateClaim(msg.sender,claimsCount, block.timestamp);
+        emit CreateClaim(_safeId,claimsCount, block.timestamp);
     }
 
     /**
