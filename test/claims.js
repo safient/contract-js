@@ -337,7 +337,7 @@ describe('SafientMain', async () => {
       // create a claim - before D-Day (claim should fail)
       const tx1 = await safientMain.connect(beneficiary).createClaim(safeId4, '');
       const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[2];
+      const claimId1 = txReceipt1.events[0].args[1];
       const claimID1 = parseInt(claimId1._hex);
 
       // check claim status (DDayBased)
@@ -355,7 +355,7 @@ describe('SafientMain', async () => {
       // create a claim - before D-Day (claim should pass)
       const tx2 = await safientMain.connect(beneficiary).createClaim(safeId4, '');
       const txReceipt2 = await tx2.wait();
-      const claimId2 = txReceipt2.events[0].args[2];
+      const claimId2 = txReceipt2.events[0].args[1];
       const claimID2 = parseInt(claimId2._hex);
 
       // check claim status (DDayBased)
@@ -391,7 +391,7 @@ describe('SafientMain', async () => {
       // create a claim - before D-Day (6 seconds) (claim should fail)
       const tx1 = await safientMain.connect(beneficiary).createClaim(safeId5, '');
       const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[2];
+      const claimId1 = txReceipt1.events[0].args[1];
       const claimID1 = parseInt(claimId1._hex);
 
       // check claim status (DDayBased)
@@ -416,7 +416,7 @@ describe('SafientMain', async () => {
       // create a claim - before D-Day (12 seconds) (claim should fail)
       const tx2 = await safientMain.connect(beneficiary).createClaim(safeId5, '');
       const txReceipt2 = await tx2.wait();
-      const claimId2 = txReceipt2.events[0].args[2];
+      const claimId2 = txReceipt2.events[0].args[1];
       const claimID2 = parseInt(claimId2._hex);
 
       // check claim status (DDayBased)
@@ -434,7 +434,7 @@ describe('SafientMain', async () => {
       // create a claim - after D-Day (10 + 2 = 12 seconds) (claim should pass)
       const tx3 = await safientMain.connect(beneficiary).createClaim(safeId5, '');
       const txReceipt3 = await tx3.wait();
-      const claimId3 = txReceipt3.events[0].args[2];
+      const claimId3 = txReceipt3.events[0].args[1];
       const claimID3 = parseInt(claimId3._hex);
 
       // check claim status (DDayBased)
