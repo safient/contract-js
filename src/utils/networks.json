@@ -23,8 +23,8 @@
   "kovan": {
     "chainId": 42,
     "addresses": {
-      "AutoAppealableArbitrator": "0x823E2b7623aD287819674548f43F8965F38B2626",
-      "SafientMain": "0x8C2FA3dE952f5A1c463af0Fb42a9A812D3Ffe9e3"
+      "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
+      "SafientMain": "0xF88915c8762aB973b64086221cDFd20Ec104F732"
     }
   },
   "ropsten": {
