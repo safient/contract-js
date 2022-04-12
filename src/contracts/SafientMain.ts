@@ -8,13 +8,13 @@ import {
   Safe,
   Signer,
 } from '../types/Types';
-import { TransactionResponse } from '@ethersproject/providers';
+import { JsonRpcProvider, TransactionResponse } from '@ethersproject/providers';
 import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
-import networks from '../utils/networks.json';
+import {networks} from '../utils/networks';
 import data from '../abis/SafientMain.json';
 
 /**
@@ -40,6 +40,9 @@ export class SafientMain {
   /** @ignore */
   private contract: Contract;
 
+  /**@ignore */
+  private provider: JsonRpcProvider
+
   /**
    * Arbitrator Constructor
    * @param signer Signer object
@@ -51,6 +54,8 @@ export class SafientMain {
     this.safientMainABI = data.abi;
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
+
+    this.provider = new JsonRpcProvider(network?.url)
 
     network !== undefined && network.addresses.SafientMain !== ''
       ? (this.safientMainAddress = network.addresses.SafientMain)
@@ -80,6 +85,11 @@ export class SafientMain {
     value: string
   ): Promise<TransactionResponse> => {
     try {
+      if(claimType === ClaimType.DDayBased){
+          const latestBlockNumber = await this.provider.getBlockNumber();
+          const latestBlock = await this.provider.getBlock(latestBlockNumber);
+          dDay = latestBlock.timestamp + dDay
+      }
       this.tx = await this.contract.createSafe(
         beneficiaryAddress,
         safeId,

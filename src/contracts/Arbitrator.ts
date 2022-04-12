@@ -3,8 +3,9 @@ import { Contract } from '@ethersproject/contracts';
 import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
-import networks from '../utils/networks.json';
+import {networks} from '../utils/networks';
 import data from '../abis/AutoAppealableArbitrator.json';
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 /**
  * This class implements an interface to interact with the arbitrator contract
