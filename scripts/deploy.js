@@ -4,7 +4,7 @@ const fs = require('fs');
 const R = require('ramda');
 const chalk = require('chalk');
 const { network, arbitratorContract, arbitrableContract, arbitrationFee, arbitratorAddress } = require('../constants');
-const networks = require('../src/utils/networks.json');
+const networks = require('../src/utils/networks.js');
 
 const abiEncodeArgs = (deployed, contractArgs) => {
   if (!contractArgs || !deployed || !R.hasPath(['interface', 'deploy'], deployed)) return '';

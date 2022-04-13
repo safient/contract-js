@@ -1,8 +1,4 @@
-const dotenv = require('dotenv');
-dotenv.config()
-
-
-const networks = {
+{
   "localhost": {
     "chainId": 31337,
     "url": "http://localhost:8545",
@@ -13,7 +9,7 @@ const networks = {
   },
   "mainnet": {
     "chainId": 1,
-    "url": `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    "url": "https://mainnet.infura.io/v3/undefined",
     "addresses": {
       "AutoAppealableArbitrator": "",
       "SafientMain": ""
@@ -29,7 +25,7 @@ const networks = {
   },
   "kovan": {
     "chainId": 42,
-    "url": `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    "url": "https://kovan.infura.io/v3/undefined",
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
       "SafientMain": "0xF88915c8762aB973b64086221cDFd20Ec104F732"
@@ -45,12 +41,10 @@ const networks = {
   },
   "polygontestnet": {
     "chainId": 80001,
-    "url": `https://matic-mumbai.chainstacklabs.com`,
+    "url": "https://matic-mumbai.chainstacklabs.com",
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
       "SafientMain": "0xccA53824ce8944a3cB7b21139bd177DEEe6e27C0"
     }
   }
 }
-
-module.exports = networks

@@ -14,7 +14,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
-import {networks} from '../utils/networks';
+import networks from '../utils/networks';
 import data from '../abis/SafientMain.json';
 
 /**
