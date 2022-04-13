@@ -14,7 +14,8 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { formatEther, parseEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
-import networks from '../utils/networks';
+import networks from '../utils/networks.json';
+import {getNetworkUrl} from "../utils/networks"
 import data from '../abis/SafientMain.json';
 
 /**
@@ -55,7 +56,8 @@ export class SafientMain {
 
     const network = Object.values(networks).find((network) => chainId === network.chainId);
 
-    this.provider = new JsonRpcProvider(network?.url)
+    const networkUrl = getNetworkUrl(chainId)
+    this.provider = new JsonRpcProvider(networkUrl)
 
     network !== undefined && network.addresses.SafientMain !== ''
       ? (this.safientMainAddress = network.addresses.SafientMain)
