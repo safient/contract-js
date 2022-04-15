@@ -5,6 +5,7 @@ import { formatEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import networks from '../utils/networks.json';
 import data from '../abis/AutoAppealableArbitrator.json';
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 /**
  * This class implements an interface to interact with the arbitrator contract
