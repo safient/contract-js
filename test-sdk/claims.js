@@ -123,13 +123,12 @@ describe('safientMain', async () => {
       const safientMain1 = new SafientMain(beneficiarySigner, chainId);
 
       const beforeTotalNumberOfSafes = await safientMain1.getTotalNumberOfSafes();
-
       // SUCCESS : create a safe(for claimType - SignalBased & signal - won't signal)
       await safientMain1.syncSafe(
         safeCreatorAddress, // 2nd account
         safeId[1],
         Types.ClaimType.SignalBased,
-        6, // 6 seconds because opting SignalBased
+        10, // 6 seconds because opting SignalBased
         0,
         '', // no metaevidence because SignalBased
         '' // no safe maintenence fee because SignalBased
@@ -140,7 +139,7 @@ describe('safientMain', async () => {
       const safe = await safientMain1.getSafeBySafeId(safeId[1]);
       expect(safe.createdBy).to.equal(safeCreatorAddress);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
-      expect(Number(safe.signalingPeriod)).to.equal(6); // 6 seconds
+      expect(Number(safe.signalingPeriod)).to.equal(10); // 6 seconds
       expect(Number(safe.endSignalTime)).to.equal(0);
       expect(Number(safe.latestSignalTime)).to.equal(0);
       expect(Number(safe.claimType)).to.equal(0); // SignalBased
@@ -151,7 +150,7 @@ describe('safientMain', async () => {
         beneficiaryAddress, // 2nd account
         safeId[2],
         Types.ClaimType.SignalBased,
-        6,
+        10,
         0,
         '',
         ''
@@ -175,7 +174,7 @@ describe('safientMain', async () => {
       // SUCCESS : create a claim (ArbitrationBased) on safeId1
       const tx = await safientMain.createClaim(safeId[0], metaevidenceOrEvidenceURI);
       const txReceipt = await tx.wait();
-      claimIdOfSafeId0 = txReceipt.events[2].args[2];
+      claimIdOfSafeId0 = txReceipt.events[2].args[1];
 
       expect(await safientMain.getTotalNumberOfClaims()).to.equal(beforeTotalNumberOfClaims + 1);
 
@@ -192,7 +191,7 @@ describe('safientMain', async () => {
       // SUCCESS : create claim on safeId2
       tx = await safientMain.createClaim(safeId[1], '');
       txReceipt = await tx.wait();
-      claimIdOfSafeId1 = txReceipt.events[0].args[2];
+      claimIdOfSafeId1 = parseInt(txReceipt.events[0].args[1]._hex)
 
       const safeWithSafeId1 = await safientMain.getSafeBySafeId(safeId[1]);
       expect(safeWithSafeId1.claimsCount).to.equal(1);
@@ -204,8 +203,7 @@ describe('safientMain', async () => {
       // SUCCESS : create claim on safeId3
       tx = await safientMain.createClaim(safeId[2], '');
       txReceipt = await tx.wait();
-      claimIdOfSafeId2 = txReceipt.events[0].args[2];
-
+      claimIdOfSafeId2 = parseInt(txReceipt.events[0].args[1]._hex)
       const safeWithSafeId2 = await safientMain.getSafeBySafeId(safeId[2]);
       expect(safeWithSafeId2.claimsCount).to.equal(1);
 
@@ -227,7 +225,7 @@ describe('safientMain', async () => {
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve(provider.send('evm_mine'));
-        }, 7000);
+        }, 11000);
       });
       const result = await mineNewBlock;
 
@@ -328,17 +326,14 @@ describe('safientMain', async () => {
       const safientMainBeneficiary = new SafientMain(beneficiarySigner, chainId);
       const safientMainAccountX = new SafientMain(accountXSigner, chainId);
 
-      const latestBlockNumber = await provider.getBlockNumber();
-      const latestBlock = await provider.getBlock(latestBlockNumber);
-      const now = latestBlock.timestamp;
 
       // SUCCESS : create another safe with safeId4 (for claimType - DDayBased) with DDay set to 6 seconds
-      await safientMainCreator.createSafe(beneficiaryAddress, safeId[3], Types.ClaimType.DDayBased, 0, now + 6, '', '');
+      await safientMainCreator.createSafe(beneficiaryAddress, safeId[3], Types.ClaimType.DDayBased, 0, 6, '', '');
 
       // create a claim - before D-Day (claim should fail)
       const tx1 = await safientMainBeneficiary.createClaim(safeId[3], '');
       const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[2];
+      const claimId1 = txReceipt1.events[0].args[1];
       const claimID1 = parseInt(claimId1._hex);
 
       // check claim status (DDayBased)
@@ -356,7 +351,7 @@ describe('safientMain', async () => {
       // create a claim - before D-Day (claim should pass)
       const tx2 = await safientMainBeneficiary.createClaim(safeId[3], '');
       const txReceipt2 = await tx2.wait();
-      const claimId2 = txReceipt2.events[0].args[2];
+      const claimId2 = txReceipt2.events[0].args[1];
       const claimID2 = parseInt(claimId2._hex);
 
       // check claim status (DDayBased)
@@ -381,7 +376,7 @@ describe('safientMain', async () => {
       // create a claim - before D-Day (6 seconds) (claim should fail)
       const tx1 = await safientMainBeneficiary.createClaim(safeId[4], '');
       const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[2];
+      const claimId1 = txReceipt1.events[0].args[1];
       const claimID1 = parseInt(claimId1._hex);
 
       // check claim status (DDayBased)
@@ -406,7 +401,7 @@ describe('safientMain', async () => {
       // create a claim - before D-Day (12 seconds) (claim should fail)
       const tx2 = await safientMainBeneficiary.createClaim(safeId[4], '');
       const txReceipt2 = await tx2.wait();
-      const claimId2 = txReceipt2.events[0].args[2];
+      const claimId2 = txReceipt2.events[0].args[1];
       const claimID2 = parseInt(claimId2._hex);
 
       // check claim status (DDayBased)
@@ -424,7 +419,7 @@ describe('safientMain', async () => {
       // create a claim - after D-Day (10 + 2 = 12 seconds) (claim should pass)
       const tx3 = await safientMainBeneficiary.createClaim(safeId[4], '');
       const txReceipt3 = await tx3.wait();
-      const claimId3 = txReceipt3.events[0].args[2];
+      const claimId3 = txReceipt3.events[0].args[1];
       const claimID3 = parseInt(claimId3._hex);
 
       // check claim status (DDayBased)

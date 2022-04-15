@@ -130,6 +130,13 @@ export class SafientMain {
     value: string
   ): Promise<TransactionResponse> => {
     try {
+
+      if(claimType === ClaimType.DDayBased){
+        const latestBlockNumber = await this.provider.getBlockNumber();
+        const latestBlock = await this.provider.getBlock(latestBlockNumber);
+        dDay = latestBlock.timestamp + dDay
+    }
+
       this.tx = await this.contract.syncSafe(
         creatorAddress,
         safeId,
