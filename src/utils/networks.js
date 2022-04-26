@@ -12,7 +12,7 @@ const networks = {
     chainId: 1,
     url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
   },
-  kovan: {s
+  kovan: {
     chainId: 42,  
     url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
 
