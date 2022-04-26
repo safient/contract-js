@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
-dotenv.config()
+dotenv.config();
 
+const INFURA_API_KEY = process.env.INFURA_API_KEY || process.env.REACT_APP_INFURA_API_KEY;
 
 const networks = {
   localhost: {
@@ -9,11 +10,11 @@ const networks = {
   },
   mainnet: {
     chainId: 1,
-    url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
   },
-  kovan: {
+  kovan: {s
     chainId: 42,  
-    url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
 
   },
   polygontestnet: {
