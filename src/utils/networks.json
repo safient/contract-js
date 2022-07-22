@@ -24,7 +24,7 @@
     "chainId": 42,
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
-      "SafientMain": "0xF88915c8762aB973b64086221cDFd20Ec104F732"
+      "SafientMain": "0x1690F123657760C1a4998f10E5908F1c53e7eFc2"
     }
   },
   "ropsten": {
