@@ -334,16 +334,10 @@ describe('SafientMain', async () => {
         ''
       );
 
+      
       // create a claim - before D-Day (claim should fail)
-      const tx1 = await safientMain.connect(beneficiary).createClaim(safeId4, '');
-      const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[1];
-      const claimID1 = parseInt(claimId1._hex);
-
-      // check claim status (DDayBased)
-      const safeId4ClaimResult1 = await safientMain.connect(accountX).getClaimStatus(safeId4, claimID1);
-      expect(safeId4ClaimResult1).to.equal(2); // claim got Failed (before D-Day)
-
+      await expect(safientMain.connect(beneficiary).createClaim(safeId4, '')).to.be.revertedWith('Cannot create claim before DDay');
+ 
       // mine a new block after 6 seconds
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -389,14 +383,7 @@ describe('SafientMain', async () => {
       );
 
       // create a claim - before D-Day (6 seconds) (claim should fail)
-      const tx1 = await safientMain.connect(beneficiary).createClaim(safeId5, '');
-      const txReceipt1 = await tx1.wait();
-      const claimId1 = txReceipt1.events[0].args[1];
-      const claimID1 = parseInt(claimId1._hex);
-
-      // check claim status (DDayBased)
-      const safeId5ClaimResult1 = await safientMain.connect(accountX).getClaimStatus(safeId5, claimID1);
-      expect(safeId5ClaimResult1).to.equal(2); // claim got Failed (before D-Day)
+      await expect(safientMain.connect(beneficiary).createClaim(safeId5, '')).to.be.revertedWith('Cannot create claim before DDay');
 
       latestBlockNumber = await ethers.provider.getBlockNumber();
       latestBlock = await ethers.provider.getBlock(latestBlockNumber);
@@ -414,14 +401,7 @@ describe('SafientMain', async () => {
       const result1 = await mineNewBlock1;
 
       // create a claim - before D-Day (12 seconds) (claim should fail)
-      const tx2 = await safientMain.connect(beneficiary).createClaim(safeId5, '');
-      const txReceipt2 = await tx2.wait();
-      const claimId2 = txReceipt2.events[0].args[1];
-      const claimID2 = parseInt(claimId2._hex);
-
-      // check claim status (DDayBased)
-      const safeId5ClaimResult2 = await safientMain.connect(accountX).getClaimStatus(safeId5, claimID2);
-      expect(safeId5ClaimResult2).to.equal(2); // claim got Failed (before D-Day)
+      await expect(safientMain.connect(beneficiary).createClaim(safeId5, '')).to.be.revertedWith('Cannot create claim before DDay');
 
       // mine a new block after 4 seconds
       const mineNewBlock2 = new Promise((resolve, reject) => {

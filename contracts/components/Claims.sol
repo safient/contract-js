@@ -235,7 +235,7 @@ contract Claims {
     ) internal dDayBasedClaim(_safeId, data) {
         claimsCount += 1;
 
-        if (block.timestamp >= data.dDay) {
+        require(block.timestamp >= data.dDay, "Cannot create claim before DDay"); 
             claims[claimsCount] = Types.Claim({
                 id: claimsCount,
                 claimedBy: msg.sender,
@@ -244,16 +244,6 @@ contract Claims {
                 evidenceGroupId: 0,
                 status: Types.ClaimStatus.Passed
             });
-        } else if (block.timestamp < data.dDay) {
-            claims[claimsCount] = Types.Claim({
-                id: claimsCount,
-                claimedBy: msg.sender,
-                claimType: Types.ClaimType.DDayBased,
-                metaEvidenceId: 0,
-                evidenceGroupId: 0,
-                status: Types.ClaimStatus.Failed
-            });
-        }
 
         emit CreateClaim(_safeId,claimsCount, block.timestamp);
     }
