@@ -1,6 +1,6 @@
 {
   "name": "@safient/contracts",
-  "version": "0.1.17-alpha",
+  "version": "0.1.18-alpha",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Web3",
@@ -62,7 +62,6 @@
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "did-jwt": "^5.6.2",
-    "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.3.0",
     "ethereumjs-wallet": "0.6.5",
     "ethers": "^5.4.3",
