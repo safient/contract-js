@@ -38,7 +38,7 @@
     "chainId": 80001,
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
-      "SafientMain": "0xccA53824ce8944a3cB7b21139bd177DEEe6e27C0"
+      "SafientMain": "0x8C2FA3dE952f5A1c463af0Fb42a9A812D3Ffe9e3"
     }
   }
 }
