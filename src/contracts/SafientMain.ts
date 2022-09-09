@@ -15,7 +15,7 @@ import { formatEther, parseEther } from '@ethersproject/units';
 import { Logger } from '@ethersproject/logger';
 import { Bytes } from 'ethers';
 import networks from '../utils/networks.json';
-import {getNetworkUrl} from "../utils/networks"
+import { getNetworkUrl } from "../utils/networks"
 import data from '../abis/SafientMain.json';
 
 /**
@@ -71,8 +71,7 @@ export class SafientMain {
    * @param beneficiaryAddress Address of the beneficiary who can claim to inherit this safe
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
-   * @param dDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+   * @param claimValue The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -81,23 +80,21 @@ export class SafientMain {
     beneficiaryAddress: string,
     safeId: string,
     claimType: ClaimType,
-    signalingPeriod: number,
-    dDay: number,
+    claimValue: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
     try {
-      if(claimType === ClaimType.DDayBased){
-          const latestBlockNumber = await this.provider.getBlockNumber();
-          const latestBlock = await this.provider.getBlock(latestBlockNumber);
-          dDay = latestBlock.timestamp + dDay
+      if (claimType === ClaimType.DDayBased || claimType === ClaimType.Expirion) {
+        const latestBlockNumber = await this.provider.getBlockNumber();
+        const latestBlock = await this.provider.getBlock(latestBlockNumber);
+        claimValue = latestBlock.timestamp + claimValue
       }
       this.tx = await this.contract.createSafe(
         beneficiaryAddress,
         safeId,
         claimType,
-        signalingPeriod,
-        dDay,
+        claimValue,
         metaevidenceURI,
         {
           value,
@@ -114,8 +111,7 @@ export class SafientMain {
    * @param creatorAddress Address of the creator who created the safe offchain
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
-   * @param dDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+   * @param claimValue The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -124,25 +120,23 @@ export class SafientMain {
     creatorAddress: string,
     safeId: string,
     claimType: ClaimType,
-    signalingPeriod: number,
-    dDay: number,
+    claimValue: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
     try {
 
-      if(claimType === ClaimType.DDayBased){
+      if (claimType === ClaimType.DDayBased || claimType === ClaimType.Expirion) {
         const latestBlockNumber = await this.provider.getBlockNumber();
         const latestBlock = await this.provider.getBlock(latestBlockNumber);
-        dDay = latestBlock.timestamp + dDay
-    }
+        claimValue = latestBlock.timestamp + claimValue
+      }
 
       this.tx = await this.contract.syncSafe(
         creatorAddress,
         safeId,
         claimType,
-        signalingPeriod,
-        dDay,
+        claimValue,
         metaevidenceURI,
         {
           value,
@@ -370,6 +364,15 @@ export class SafientMain {
   updateDDay = async (safeId: string, dDay: number): Promise<TransactionResponse> => {
     try {
       this.tx = await this.contract.updateDDay(safeId, dDay);
+      return this.tx;
+    } catch (e: any) {
+      this.logger.throwError(e.message);
+    }
+  };
+
+  updateEDay = async (safeId: string, eDay: number): Promise<TransactionResponse> => {
+    try {
+      this.tx = await this.contract.updateEDay(safeId, eDay);
       return this.tx;
     } catch (e: any) {
       this.logger.throwError(e.message);
