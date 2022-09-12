@@ -8,7 +8,7 @@ export type Safe = {
   createdBy: string;
   currentOwner: string;
   beneficiary: string;
-  claimValue: BigNumber;
+  claimPeriod: BigNumber;
   claimTimeStamp: BigNumber;
   claimType: ClaimType;
   metaEvidenceId: BigNumber;

@@ -28,7 +28,7 @@ library Types {
         address createdBy;
         address currentOwner;
         address beneficiary;
-        uint256 claimValue;
+        uint256 claimPeriod;
         uint256 claimTimeStamp;
         ClaimType claimType;
         uint256 metaEvidenceId;
@@ -39,7 +39,6 @@ library Types {
     struct Claim {
         uint256 id;
         address claimedBy;
-        ClaimType claimType;// need to remove
         uint256 metaEvidenceId;
         uint256 evidenceGroupId;
         ClaimStatus status;

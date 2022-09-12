@@ -205,7 +205,6 @@ contract Claims {
         claims[disputeID] = Types.Claim({
             id: disputeID,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.ArbitrationBased,
             metaEvidenceId: data.metaEvidenceId,
             evidenceGroupId: evidenceGroupID,
             status: Types.ClaimStatus.Active
@@ -234,7 +233,6 @@ contract Claims {
         claims[claimsCount] = Types.Claim({
             id: claimsCount,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.SignalBased,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Active
@@ -261,7 +259,6 @@ contract Claims {
         claims[claimsCount] = Types.Claim({
             id: claimsCount,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.DDayBased,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Passed
@@ -280,11 +277,10 @@ contract Claims {
         Types.ExpirionClaimData memory data
     ) internal ExpirionBasedClaim(_safeId, data) {
         claimsCount += 1;
-        require(block.timestamp < data.expiryDay, "Claim has been expired");
+        require(block.timestamp < data.expiryDay, "Safe has been expired");
         claims[claimsCount] = Types.Claim({
             id: claimsCount,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.Expirion,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Passed

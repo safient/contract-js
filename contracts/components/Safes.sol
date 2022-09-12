@@ -118,7 +118,7 @@ contract Safes {
             "Only safe current owner can updade the D Day"
         );
 
-        require(block.timestamp < safe.claimValue, "DDay has already passed");
+        require(block.timestamp < safe.claimPeriod, "DDay has already passed");
         _;
     }
 
@@ -130,7 +130,7 @@ contract Safes {
             "Only safe current owner can updade the E Day"
         );
 
-        require(block.timestamp < safe.claimValue, "EDay has expired");
+        require(block.timestamp < safe.claimPeriod, "EDay has expired");
         _;
     }
 
@@ -147,14 +147,14 @@ contract Safes {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _claimValue Value of claim is uint256 it can be signaling period or dday or eday
+     * @param _claimPeriod Value of claim is uint256 it can be signaling period or dday or eday
      * @param _metaEvidence URL of the metaevidence
      */
     function _createSafe(
         address _beneficiary,
         string memory _safeId,
         Types.ClaimType _claimType,
-        uint256 _claimValue,
+        uint256 _claimPeriod,
         string calldata _metaEvidence
     ) internal createSafeByCreator(_safeId, _beneficiary) returns (bool) {
         if (_claimType == Types.ClaimType.ArbitrationBased) {
@@ -168,7 +168,7 @@ contract Safes {
             createdBy: msg.sender,
             currentOwner: msg.sender,
             beneficiary: _beneficiary,
-            claimValue: _claimValue,
+            claimPeriod: _claimPeriod,
             claimType: _claimType,
             claimTimeStamp : 0,
             metaEvidenceId: metaEvidenceID,
@@ -191,14 +191,14 @@ contract Safes {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _claimValue Value of claim is uint256 it can be signaling period or dday or eday
+     * @param _claimPeriod Value of claim is uint256 it can be signaling period or dday or eday
      * @param _metaEvidence URL of the metaevidence
      */
     function _syncSafe(
         address _creator,
         string memory _safeId,
         Types.ClaimType _claimType,
-        uint256 _claimValue,
+        uint256 _claimPeriod,
         string calldata _metaEvidence
     ) internal syncSafeByBeneficiary(_safeId, _creator) returns (bool) {
         if (_claimType == Types.ClaimType.ArbitrationBased) {
@@ -211,7 +211,7 @@ contract Safes {
             createdBy: _creator,
             currentOwner: _creator,
             beneficiary: msg.sender,
-            claimValue : _claimValue,
+            claimPeriod : _claimPeriod,
             claimType: _claimType,
             claimTimeStamp : 0,
             metaEvidenceId: metaEvidenceID,
@@ -303,7 +303,7 @@ contract Safes {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        safe.claimValue = _DDay;
+        safe.claimPeriod = _DDay;
         safes[_safeId] = safe;
 
         return true;
@@ -316,7 +316,7 @@ contract Safes {
     {
         Types.Safe memory safe = safes[_safeId];
 
-        safe.claimValue = _EDay;
+        safe.claimPeriod = _EDay;
         safes[_safeId] = safe;
 
         return true;

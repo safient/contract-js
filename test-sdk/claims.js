@@ -67,7 +67,7 @@ describe('safientMain', async () => {
       const safe = await safientMain.getSafeBySafeId(safeId[0]);
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
       expect(ethers.utils.formatEther(safe.funds)).to.equal('0.011');
-      expect(Number(safe.claimValue)).to.equal(0); // 0 seconds
+      expect(Number(safe.claimPeriod)).to.equal(0); // 0 seconds
       // expect(Number(safe.endSignalTime)).to.equal(0);
       // expect(Number(safe.latestSignalTime)).to.equal(0);
       expect(Number(safe.claimType)).to.equal(1); // ArbitrationBased
@@ -128,7 +128,7 @@ describe('safientMain', async () => {
 
       expect(safe.beneficiary).to.equal(beneficiaryAddress);
 
-      expect(Number(safe.claimValue)).to.equal(10); // 6 seconds
+      expect(Number(safe.claimPeriod)).to.equal(10); // 6 seconds
 
       // expect(Number(safe.endSignalTime)).to.equal(0);
       // expect(Number(safe.latestSignalTime)).to.equal(0);
@@ -163,6 +163,7 @@ describe('safientMain', async () => {
       const tx = await safientMain.createClaim(safeId[0], metaevidenceOrEvidenceURI);
       const txReceipt = await tx.wait();
       claimIdOfSafeId0 = txReceipt.events[2].args[1];
+     
 
       expect(await safientMain.getTotalNumberOfClaims()).to.equal(beforeTotalNumberOfClaims + 1);
 
@@ -289,9 +290,8 @@ describe('safientMain', async () => {
       const safientMain = new SafientMain(accountXSigner, chainId);
 
       const claim = await safientMain.getClaimByClaimId(claimIdOfSafeId0);
-
       expect(claim.claimedBy).to.equal(beneficiaryAddress);
-      expect(claim.claimType).to.equal(1);
+      // expect(claim.claimType).to.equal(1);
     });
 
     it('Should get the total number of safes on the contract', async () => {

@@ -71,7 +71,7 @@ export class SafientMain {
    * @param beneficiaryAddress Address of the beneficiary who can claim to inherit this safe
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param claimValue The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
+   * @param claimPeriod The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -80,7 +80,7 @@ export class SafientMain {
     beneficiaryAddress: string,
     safeId: string,
     claimType: ClaimType,
-    claimValue: number,
+    claimPeriod: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
@@ -88,13 +88,13 @@ export class SafientMain {
       if (claimType === ClaimType.DDayBased || claimType === ClaimType.Expirion) {
         const latestBlockNumber = await this.provider.getBlockNumber();
         const latestBlock = await this.provider.getBlock(latestBlockNumber);
-        claimValue = latestBlock.timestamp + claimValue
+        claimPeriod = latestBlock.timestamp + claimPeriod
       }
       this.tx = await this.contract.createSafe(
         beneficiaryAddress,
         safeId,
         claimType,
-        claimValue,
+        claimPeriod,
         metaevidenceURI,
         {
           value,
@@ -111,7 +111,7 @@ export class SafientMain {
    * @param creatorAddress Address of the creator who created the safe offchain
    * @param safeId Id of the safe
    * @param claimType Type of claim the inheritor has go through
-   * @param claimValue The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
+   * @param claimPeriod The value use to vaiditate based on claimType after which the beneficiary can directly claim the safe
    * @param metaevidenceURI IPFS URI pointing to the metaevidence related to general agreement, arbitration details, actors involved etc
    * @param value Safe maintanence fee in Gwei, minimum arbitration fee required
    * @returns A transaction response
@@ -120,7 +120,7 @@ export class SafientMain {
     creatorAddress: string,
     safeId: string,
     claimType: ClaimType,
-    claimValue: number,
+    claimPeriod: number,
     metaevidenceURI: string,
     value: string
   ): Promise<TransactionResponse> => {
@@ -129,14 +129,14 @@ export class SafientMain {
       if (claimType === ClaimType.DDayBased || claimType === ClaimType.Expirion) {
         const latestBlockNumber = await this.provider.getBlockNumber();
         const latestBlock = await this.provider.getBlock(latestBlockNumber);
-        claimValue = latestBlock.timestamp + claimValue
+        claimPeriod = latestBlock.timestamp + claimPeriod
       }
 
       this.tx = await this.contract.syncSafe(
         creatorAddress,
         safeId,
         claimType,
-        claimValue,
+        claimPeriod,
         metaevidenceURI,
         {
           value,

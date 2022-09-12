@@ -59,7 +59,7 @@ describe('SafientMain', async () => {
       expect(safe.createdBy).to.equal(safeCreator.address);
       expect(safe.beneficiary).to.equal(beneficiary.address);
       expect(safe.funds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
-      expect(Number(safe.claimValue)).to.equal(0); // 0 seconds
+      expect(Number(safe.claimPeriod)).to.equal(0); // 0 seconds
       expect(Number(safe.claimType)).to.equal(1); // ArbitrationBased
 
       // FAILURE : beneficiary is an zero address
@@ -110,7 +110,7 @@ describe('SafientMain', async () => {
       const safe = await safientMain.safes(safeId2);
       expect(safe.createdBy).to.equal(safeCreator.address);
       expect(safe.beneficiary).to.equal(beneficiary.address);
-      expect(Number(safe.claimValue)).to.equal(6); // 6 seconds
+      expect(Number(safe.claimPeriod)).to.equal(6); // 6 seconds
       expect(Number(safe.claimType)).to.equal(0); // SignalBased
 
       // FAILURE : beneficiary is an zero address
@@ -443,7 +443,7 @@ describe('SafientMain', async () => {
       const result = await mineNewBlock;
 
       // create a claim - after Expiry (claim should fail)
-      await expect(safientMain.connect(beneficiary).createClaim(safeId6, '')).to.be.revertedWith('Claim has been expired');
+      await expect(safientMain.connect(beneficiary).createClaim(safeId6, '')).to.be.revertedWith('Safe has been expired');
 
       // check claim status (ExpirionBased)
       const safeId4ClaimResult2 = await safientMain.connect(accountX).getClaimStatus(safeId6, claimID2);
