@@ -2,8 +2,6 @@ const { ethers } = require('hardhat');
 const { JsonRpcProvider } = require('@ethersproject/providers');
 const chai = require('chai');
 
-require('dotenv').config();
-
 const expect = chai.expect;
 chai.use(require('chai-as-promised'));
 

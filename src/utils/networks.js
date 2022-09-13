@@ -1,5 +1,4 @@
-const dotenv = require('dotenv');
-dotenv.config();
+
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || process.env.REACT_APP_INFURA_API_KEY;
 

@@ -1,4 +1,3 @@
-require('dotenv').config();
 require('@nomiclabs/hardhat-waffle');
 const fs = require('fs');
 const { network } = require('./constants');
