@@ -8,9 +8,8 @@ export type Safe = {
   createdBy: string;
   currentOwner: string;
   beneficiary: string;
-  signalingPeriod: BigNumber;
-  endSignalTime: BigNumber;
-  latestSignalTime: BigNumber;
+  claimPeriod: BigNumber;
+  claimTimeStamp: BigNumber;
   claimType: ClaimType;
   metaEvidenceId: BigNumber;
   claimsCount: BigNumber;
@@ -51,4 +50,5 @@ export enum ClaimType {
   SignalBased,
   ArbitrationBased,
   DDayBased,
+  Expirion
 }

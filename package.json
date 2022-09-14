@@ -1,6 +1,6 @@
 {
   "name": "@safient/contracts",
-  "version": "0.1.18-alpha",
+  "version": "0.1.19-alpha",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Web3",
@@ -17,8 +17,8 @@
     "deploy": "hardhat run scripts/deploy.js",
     "deploy:sdk": "npm run deploy && npm run build",
     "test:contract": "hardhat test --network hardhat",
-    "test:sdk": "mocha test-sdk/claims.js --timeout 100000",
-    "test": "npm run test-contract && npm run test-sdk",
+    "test:sdk": "npm run deploy:sdk && mocha test-sdk/claims.js --timeout 100000",
+    "test": "npm run test:contract && npm run test:sdk",
     "generate": "hardhat generate",
     "account": "hardhat account",
     "build": "tsc -p tsconfig.json",

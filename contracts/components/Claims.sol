@@ -96,6 +96,29 @@ contract Claims {
         _;
     }
 
+    modifier ExpirionBasedClaim(
+        string memory _safeId,
+        Types.ExpirionClaimData memory data
+    ) {
+        require(data.currentOwner != address(0), "Safe does not exist");
+
+        require(
+            bytes(_safeId).length > 1,
+            "Should provide ID of the safe on threadDB"
+        );
+
+        require(
+            msg.sender == data.beneficiary,
+            "Only beneficiary of the safe can create the claim"
+        );
+
+        require(
+            data.expiryDay != 0,
+            "Expiry date is not set by the safe's current owner"
+        );
+        _;
+    }
+
     modifier evidenceSubmission(uint256 _disputeID, string calldata _evidence) {
         Types.Claim memory claim = claims[_disputeID];
 
@@ -177,23 +200,18 @@ contract Claims {
 
         evidenceGroupID += 1;
 
-        emit Dispute(
-            data.arbitrator,
-            disputeID,
-            data.metaEvidenceId
-        );
+        emit Dispute(data.arbitrator, disputeID, data.metaEvidenceId);
 
         claims[disputeID] = Types.Claim({
             id: disputeID,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.ArbitrationBased,
             metaEvidenceId: data.metaEvidenceId,
             evidenceGroupId: evidenceGroupID,
             status: Types.ClaimStatus.Active
         });
 
         claimsCount += 1;
-        emit CreateClaim(_safeId,disputeID, block.timestamp);
+        emit CreateClaim(_safeId, disputeID, block.timestamp);
         if (bytes(_evidence).length != 0) {
             _submitEvidence(disputeID, _evidence, data.arbitrator);
         }
@@ -215,7 +233,6 @@ contract Claims {
         claims[claimsCount] = Types.Claim({
             id: claimsCount,
             claimedBy: msg.sender,
-            claimType: Types.ClaimType.SignalBased,
             metaEvidenceId: 0,
             evidenceGroupId: 0,
             status: Types.ClaimStatus.Active
@@ -235,17 +252,41 @@ contract Claims {
     ) internal dDayBasedClaim(_safeId, data) {
         claimsCount += 1;
 
-        require(block.timestamp >= data.dDay, "Cannot create claim before DDay"); 
-            claims[claimsCount] = Types.Claim({
-                id: claimsCount,
-                claimedBy: msg.sender,
-                claimType: Types.ClaimType.DDayBased,
-                metaEvidenceId: 0,
-                evidenceGroupId: 0,
-                status: Types.ClaimStatus.Passed
-            });
+        require(
+            block.timestamp >= data.dDay,
+            "Cannot create claim before DDay"
+        );
+        claims[claimsCount] = Types.Claim({
+            id: claimsCount,
+            claimedBy: msg.sender,
+            metaEvidenceId: 0,
+            evidenceGroupId: 0,
+            status: Types.ClaimStatus.Passed
+        });
 
-        emit CreateClaim(_safeId,claimsCount, block.timestamp);
+        emit CreateClaim(_safeId, claimsCount, block.timestamp);
+    }
+
+    /**
+     * @notice Create a new Expiry-Day based claim
+     * @param _safeId Id of the safe
+     * @param data Includes safe data
+     */
+    function _createExpirionBasedClaim(
+        string memory _safeId,
+        Types.ExpirionClaimData memory data
+    ) internal ExpirionBasedClaim(_safeId, data) {
+        claimsCount += 1;
+        require(block.timestamp < data.expiryDay, "Safe has been expired");
+        claims[claimsCount] = Types.Claim({
+            id: claimsCount,
+            claimedBy: msg.sender,
+            metaEvidenceId: 0,
+            evidenceGroupId: 0,
+            status: Types.ClaimStatus.Passed
+        });
+
+        emit CreateClaim(_safeId, claimsCount, block.timestamp);
     }
 
     /**

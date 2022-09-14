@@ -19,7 +19,8 @@ library Types {
     enum ClaimType {
         SignalBased,
         ArbitrationBased,
-        DDayBased
+        DDayBased,
+        Expirion
     }
 
     struct Safe {
@@ -27,10 +28,8 @@ library Types {
         address createdBy;
         address currentOwner;
         address beneficiary;
-        uint256 signalingPeriod;
-        uint256 endSignalTime;
-        uint256 latestSignalTime;
-        uint256 dDay;
+        uint256 claimPeriod;
+        uint256 claimTimeStamp;
         ClaimType claimType;
         uint256 metaEvidenceId;
         uint256 claimsCount;
@@ -40,7 +39,6 @@ library Types {
     struct Claim {
         uint256 id;
         address claimedBy;
-        ClaimType claimType;
         uint256 metaEvidenceId;
         uint256 evidenceGroupId;
         ClaimStatus status;
@@ -71,5 +69,11 @@ library Types {
         address currentOwner;
         address beneficiary;
         uint256 dDay;
+    }
+
+    struct ExpirionClaimData {
+        address currentOwner;
+        address beneficiary;
+        uint256 expiryDay;
     }
 }

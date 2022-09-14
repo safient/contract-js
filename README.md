@@ -17,7 +17,7 @@ Create a .env file in the root directory with `INFURA_API_KEY` for mainnet or te
 #### Testing the contracts
 
 ```bash
-  npm run test-contract
+  npm run test:contract
 ```
 
 #### Testing the JS SDK
@@ -31,15 +31,15 @@ Run a local blockchain
 Deploy the contract, run the test on a different terminal
 
 ```bash
-  npm run deploy-sdk
-  npm run test-sdk
+  npm run deploy:sdk
+  npm run test:sdk
 ```
 
 #### Testing the contract & SDK
 
 ```bash
-  npm run deploy-sdk
-  npm run tests
+  npm run deploy:sdk
+  npm run test
 ```
 
 ## Getting started

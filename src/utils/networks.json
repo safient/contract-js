@@ -2,8 +2,8 @@
   "localhost": {
     "chainId": 31337,
     "addresses": {
-      "AutoAppealableArbitrator": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      "SafientMain": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      "AutoAppealableArbitrator": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+      "SafientMain": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
     }
   },
   "mainnet": {
@@ -38,7 +38,7 @@
     "chainId": 80001,
     "addresses": {
       "AutoAppealableArbitrator": "0xf54D6b97749ECD28F9EbF836Ed9cE0C387a2f0A1",
-      "SafientMain": "0x8C2FA3dE952f5A1c463af0Fb42a9A812D3Ffe9e3"
+      "SafientMain": "0xF88915c8762aB973b64086221cDFd20Ec104F732"
     }
   }
 }

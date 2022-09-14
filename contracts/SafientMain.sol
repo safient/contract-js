@@ -40,16 +40,14 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _beneficiary Address of the safe beneficiary
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod The time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
-     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+     * @param _claimPeriod Value of claim is uint256 it can be signaling period or dday or eday
      * @param _metaEvidence URL of the metaevidence
      */
     function createSafe(
         address _beneficiary,
         string memory _safeId,
         Types.ClaimType _claimType,
-        uint256 _signalingPeriod,
-        uint256 _DDay,
+        uint256 _claimPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
@@ -57,8 +55,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _beneficiary,
                 _safeId,
                 _claimType,
-                _signalingPeriod,
-                _DDay,
+                _claimPeriod,
                 _metaEvidence
             );
     }
@@ -68,16 +65,14 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
      * @param _creator Address of the safe creator
      * @param _safeId Id of the safe
      * @param _claimType Type of the claim
-     * @param _signalingPeriod TThe time window in seconds within which the creator wants to signal the safe in response to a claim on the safe
-     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+     * @param _claimPeriod Value of claim is uint256 it can be signaling period or dday or eday
      * @param _metaEvidence URL of the metaevidence
      */
     function syncSafe(
         address _creator,
         string memory _safeId,
         Types.ClaimType _claimType,
-        uint256 _signalingPeriod,
-        uint256 _DDay,
+        uint256 _claimPeriod,
         string calldata _metaEvidence
     ) external payable returns (bool) {
         return
@@ -85,8 +80,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _creator,
                 _safeId,
                 _claimType,
-                _signalingPeriod,
-                _DDay,
+                _claimPeriod,
                 _metaEvidence
             );
     }
@@ -126,25 +120,29 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
                 _safeId,
                 safe.currentOwner,
                 safe.beneficiary,
-                safe.endSignalTime
+                safe.claimTimeStamp
             );
-
-            safe.latestSignalTime = 0;
-            safe.endSignalTime = block.timestamp + safe.signalingPeriod;
-
+            // safe.latestSignalTime = 0;
+            safe.claimTimeStamp = block.timestamp + safe.claimPeriod;
             _createSignalBasedClaim(_safeId, data);
-
             safe.claimsCount += 1;
             safes[_safeId] = safe;
         } else if (safe.claimType == Types.ClaimType.DDayBased) {
             Types.DDayBasedClaimData memory data = Types.DDayBasedClaimData(
                 safe.currentOwner,
                 safe.beneficiary,
-                safe.dDay
+                safe.claimPeriod
             );
-
             _createDDayBasedClaim(_safeId, data);
-
+            safe.claimsCount += 1;
+            safes[_safeId] = safe;
+        } else if (safe.claimType == Types.ClaimType.Expirion) {
+            Types.ExpirionClaimData memory data = Types.ExpirionClaimData(
+                safe.currentOwner,
+                safe.beneficiary,
+                safe.claimPeriod
+            );
+            _createExpirionBasedClaim(_safeId, data);
             safe.claimsCount += 1;
             safes[_safeId] = safe;
         }
@@ -217,25 +215,23 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
 
         if (
             safe.claimType == Types.ClaimType.ArbitrationBased ||
-            safe.claimType == Types.ClaimType.DDayBased
+            safe.claimType == Types.ClaimType.DDayBased ||
+            safe.claimType == Types.ClaimType.Expirion
         ) {
             Types.Claim memory claim = claims[_claimId];
-
             return claim.status;
         } else if (safe.claimType == Types.ClaimType.SignalBased) {
             if (
-                safe.latestSignalTime == 0 &&
-                safe.endSignalTime != 0 &&
-                block.timestamp < safe.endSignalTime
+                safe.claimTimeStamp != 0 &&
+                block.timestamp < safe.claimTimeStamp
             ) {
                 return Types.ClaimStatus.Active;
             } else if (
-                safe.latestSignalTime == 0 &&
-                safe.endSignalTime != 0 &&
-                block.timestamp > safe.endSignalTime
+                safe.claimTimeStamp != 0 &&
+                block.timestamp > safe.claimTimeStamp
             ) {
                 return Types.ClaimStatus.Passed;
-            } else if (safe.latestSignalTime > 0 && safe.endSignalTime == 0) {
+            } else if (safe.claimTimeStamp == 0) {
                 return Types.ClaimStatus.Failed;
             }
         }
@@ -297,5 +293,12 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         returns (bool)
     {
         return _updateDDay(_safeId, _DDay);
+    }
+
+     function updateEDay(string memory _safeId, uint256 _DDay)
+        external
+        returns (bool)
+    {
+        return _updateEDay(_safeId, _DDay);
     }
 }

@@ -11,11 +11,14 @@ describe('SafientMain', async () => {
   const safeId3 = '01234567892'; // SignalBased claim (owner will signal)
   const safeId4 = '01234567893'; // DDayBased claim
   const safeId5 = '01234567894'; // DDayBased claim
+  const safeId6 = '01234567895'; // Expirion claim
+  const safeId7 = '01234567896'; // Expirion claim (expired)
 
   const ClaimType = {
     SignalBased: 0,
     ArbitrationBased: 1,
     DDayBased: 2,
+    EExpirion: 3
   };
 
   describe('SafientMain Test Flow', async () => {
@@ -42,8 +45,7 @@ describe('SafientMain', async () => {
         beneficiary.address,
         safeId1,
         ClaimType.ArbitrationBased,
-        0, // signaling period - 0 seconds
-        0, // D day - 0 seconds
+        0,
         'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
         {
           value: arbitrationFee.toNumber() + ethers.utils.parseEther('0.001').toNumber(),
@@ -57,9 +59,7 @@ describe('SafientMain', async () => {
       expect(safe.createdBy).to.equal(safeCreator.address);
       expect(safe.beneficiary).to.equal(beneficiary.address);
       expect(safe.funds).to.equal(ethers.utils.parseEther('0.002')); // 0.002 eth
-      expect(Number(safe.signalingPeriod)).to.equal(0); // 0 seconds
-      expect(Number(safe.endSignalTime)).to.equal(0);
-      expect(Number(safe.latestSignalTime)).to.equal(0);
+      expect(Number(safe.claimPeriod)).to.equal(0); // 0 seconds
       expect(Number(safe.claimType)).to.equal(1); // ArbitrationBased
 
       // FAILURE : beneficiary is an zero address
@@ -70,7 +70,6 @@ describe('SafientMain', async () => {
             '0x0000000000000000000000000000000000000000',
             safeId1,
             ClaimType.ArbitrationBased,
-            0,
             0,
             'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
             {
@@ -88,7 +87,6 @@ describe('SafientMain', async () => {
             safeId1,
             ClaimType.ArbitrationBased,
             0,
-            0,
             'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/',
             {
               value: arbitrationFee.toNumber(),
@@ -104,7 +102,6 @@ describe('SafientMain', async () => {
         safeId2,
         ClaimType.SignalBased,
         6, // 6 seconds because opting SignalBased
-        0,
         '' // no metaevidence because SignalBased
       );
 
@@ -113,25 +110,23 @@ describe('SafientMain', async () => {
       const safe = await safientMain.safes(safeId2);
       expect(safe.createdBy).to.equal(safeCreator.address);
       expect(safe.beneficiary).to.equal(beneficiary.address);
-      expect(Number(safe.signalingPeriod)).to.equal(6); // 6 seconds
-      expect(Number(safe.endSignalTime)).to.equal(0);
-      expect(Number(safe.latestSignalTime)).to.equal(0);
+      expect(Number(safe.claimPeriod)).to.equal(6); // 6 seconds
       expect(Number(safe.claimType)).to.equal(0); // SignalBased
 
       // FAILURE : beneficiary is an zero address
       await expect(
         safientMain
           .connect(beneficiary)
-          .syncSafe('0x0000000000000000000000000000000000000000', safeId2, ClaimType.SignalBased, 1, 0, '')
+          .syncSafe('0x0000000000000000000000000000000000000000', safeId2, ClaimType.SignalBased, 1, '')
       ).to.be.revertedWith('Should provide an creator for the safe');
 
       // FAILURE : safe creator and beneficiary are same
       await expect(
-        safientMain.connect(beneficiary).syncSafe(beneficiary.address, safeId2, ClaimType.SignalBased, 1, 0, '')
+        safientMain.connect(beneficiary).syncSafe(beneficiary.address, safeId2, ClaimType.SignalBased, 1, '')
       ).to.be.revertedWith('Safe should be synced by the beneficiary of the safe');
 
       // SUCCESS : create another safe with safeId3(for claimType - SignalBased & signal - will signal)
-      await safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId3, ClaimType.SignalBased, 6, 0, '');
+      await safientMain.connect(safeCreator).createSafe(beneficiary.address, safeId3, ClaimType.SignalBased, 6, '');
     });
 
     it('Should allow beneficiaries to create a claim (ArbitrationBased)', async () => {
@@ -207,7 +202,6 @@ describe('SafientMain', async () => {
       const claim2 = await safientMain.claims(3);
       expect(claim2.id).to.equal(3);
       expect(claim2.claimedBy).to.equal(beneficiary.address);
-
       // SUCCESS : create claim on safeId3
       await safientMain.connect(beneficiary).createClaim(safeId3, '');
       const safe3 = await safientMain.safes(safeId3);
@@ -222,7 +216,8 @@ describe('SafientMain', async () => {
       await safientMain.connect(safeCreator).sendSignal(safeId3);
 
       const safe3 = await safientMain.safes(safeId3);
-      expect(Number(safe3.latestSignalTime)).greaterThan(0);
+
+      // expect(Number(safe3.latestSignalTime)).greaterThan(0);
 
       // mine a new block after 6 seconds
       const mineNewBlock = new Promise((resolve, reject) => {
@@ -329,15 +324,13 @@ describe('SafientMain', async () => {
         beneficiary.address,
         safeId4,
         ClaimType.DDayBased,
-        0, // signaling period - 0 seconds
         now + 6, // D day - 6 seconds
         ''
       );
 
-      
       // create a claim - before D-Day (claim should fail)
       await expect(safientMain.connect(beneficiary).createClaim(safeId4, '')).to.be.revertedWith('Cannot create claim before DDay');
- 
+
       // mine a new block after 6 seconds
       const mineNewBlock = new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -377,7 +370,6 @@ describe('SafientMain', async () => {
         beneficiary.address,
         safeId5,
         ClaimType.DDayBased,
-        0, // signaling period - 0 seconds
         now + 6, // D day - 6 seconds
         ''
       );
@@ -420,6 +412,84 @@ describe('SafientMain', async () => {
       // check claim status (DDayBased)
       const safeId5ClaimResult3 = await safientMain.connect(accountX).getClaimStatus(safeId5, claimID3);
       expect(safeId5ClaimResult3).to.equal(1); // claim got Passed (after D-Day)
+    });
+
+    it('Should allow beneficiaries to create a Expirion (Expiry Date based)', async () => {
+      const latestBlockNumber = await ethers.provider.getBlockNumber();
+      const latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      const now = latestBlock.timestamp;
+
+      // create a safe(for claimType - DDayBased)
+      await safientMain.connect(safeCreator).createSafe(
+        beneficiary.address,
+        safeId6,
+        ClaimType.EExpirion,
+        now + 10, // Expiry day - 10 seconds
+        ''
+      );
+
+      // create a claim - before Expiry Date (claim should pass)
+      const tx2 = await safientMain.connect(beneficiary).createClaim(safeId6, '');
+      const txReceipt2 = await tx2.wait();
+      const claimId2 = txReceipt2.events[0].args[1];
+      const claimID2 = parseInt(claimId2._hex);
+
+      // mine a new block after 10 seconds
+      const mineNewBlock = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve(ethers.provider.send('evm_mine'));
+        }, 10000);
+      });
+      const result = await mineNewBlock;
+
+      // create a claim - after Expiry (claim should fail)
+      await expect(safientMain.connect(beneficiary).createClaim(safeId6, '')).to.be.revertedWith('Safe has been expired');
+
+      // check claim status (ExpirionBased)
+      const safeId4ClaimResult2 = await safientMain.connect(accountX).getClaimStatus(safeId6, claimID2);
+      expect(safeId4ClaimResult2).to.equal(1); // claim got Passed (after D-Day)
+
+      // FAILURE : safe does not exist
+      await expect(safientMain.connect(beneficiary).createClaim('1234', '')).to.be.revertedWith('Safe does not exist');
+
+      // FAILURE : only beneficiary of the safe can create the claim
+      await expect(safientMain.connect(accountX).createClaim(safeId6, '')).to.be.revertedWith(
+        'Only beneficiary of the safe can create the claim'
+      );
+    });
+
+    it('Should allow safe current owner to update before Expiry Date', async () => {
+      let latestBlockNumber, latestBlock, now;
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
+      // create a safe(for claimType - DDayBased)
+      await safientMain.connect(safeCreator).createSafe(
+        beneficiary.address,
+        safeId7,
+        ClaimType.EExpirion,
+        now + 10, // Expiry day - 10 seconds
+        ''
+      );
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
+      // Update the Expiry-Day - 20 seconds
+      await safientMain.connect(safeCreator).updateEDay(safeId7, now + 20); // update the Expiry to 20 seconds from the time of updating
+
+      // create a claim - before Expiry-Day (20 seconds) (claim should pass)
+      const tx3 = await safientMain.connect(beneficiary).createClaim(safeId7, '');
+      const txReceipt3 = await tx3.wait();
+      const claimId3 = txReceipt3.events[0].args[1];
+      const claimID3 = parseInt(claimId3._hex);
+
+      // check claim status (ExpirionBased)
+      const safeId5ClaimResult3 = await safientMain.connect(accountX).getClaimStatus(safeId7, claimID3);
+      expect(safeId5ClaimResult3).to.equal(1); // claim got Passed (before Expirion-Day)
     });
   });
 });
