@@ -9,6 +9,7 @@ const metaevidenceOrEvidenceURI =
   'https://bafybeif52vrffdp7m2ip5f44ox552r7p477druj2w4g3r47wpuzdn7235y.ipfs.infura-ipfs.io/';
 
 const { SafientMain, Arbitrator, Types } = require('../dist/index');
+const { ClaimType } = require('../dist/types/Types');
 
 describe('safientMain', async () => {
   let safeId = [];
@@ -24,7 +25,7 @@ describe('safientMain', async () => {
   describe('Safient Claims Test Flow', async () => {
     before(async () => {
       // Random safe id's
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 11; i++) {
         safeId.push(Math.random().toString(36).substr(2, 5));
       }
 
@@ -161,7 +162,7 @@ describe('safientMain', async () => {
       const tx = await safientMain.createClaim(safeId[0], metaevidenceOrEvidenceURI);
       const txReceipt = await tx.wait();
       claimIdOfSafeId0 = txReceipt.events[2].args[1];
-     
+
 
       expect(await safientMain.getTotalNumberOfClaims()).to.equal(beforeTotalNumberOfClaims + 1);
 
@@ -203,7 +204,7 @@ describe('safientMain', async () => {
       const safientMain = new SafientMain(safeCreatorSigner, chainId);
 
       // SUCCESS: Signal safeId3 - results in a failed claim
-      await safientMain.sendSignal(safeId[2]);
+      await safientMain.sendUpdateSafe(safeId[2],ClaimType.SignalBased,0,'',false);
 
       const safeWithSafeId3 = await safientMain.getSafeBySafeId(safeId[2]);
       // expect(Number(safeWithSafeId3.latestSignalTime)).greaterThan(0);
@@ -364,7 +365,7 @@ describe('safientMain', async () => {
       now = latestBlock.timestamp;
 
       // Update the D-Day - 12 seconds
-      await safientMainCreator.updateDDay(safeId[4], now + 12); // update the D-Day to 12 seconds from the time of updating
+      await safientMainCreator.sendUpdateSafe(safeId[4], ClaimType.DDayBased, now + 12, '',false); // update the D-Day to 12 seconds from the time of updating
 
       // mine a new block after 10 seconds
       const mineNewBlock1 = new Promise((resolve, reject) => {
@@ -455,7 +456,7 @@ describe('safientMain', async () => {
       // create a claim - after E-Day (6 seconds) (claim should fail)
       await expect(safientMainBeneficiary.createClaim(safeId[7], '')).to.be.rejectedWith(Error);;
 
-    
+
       // SUCCESS : create another safe with safeId8 (for claimType - Expirion) with EDay set to 6 seconds
       await safientMainCreator.createSafe(beneficiaryAddress, safeId[8], Types.ClaimType.Expirion, 6, '', '');
 
@@ -464,7 +465,7 @@ describe('safientMain', async () => {
       now = latestBlock.timestamp;
 
       // Update the E-Day - 12 seconds
-      await safientMainCreator.updateEDay(safeId[8], now + 12); // update the E-Day to 12 seconds from the time of updating
+      await safientMainCreator.sendUpdateSafe(safeId[8],ClaimType.Expirion, now + 12, '', false); // update the E-Day to 12 seconds from the time of updating
 
       // create a claim - before E-Day (10 + 2 = 12 seconds) (claim should pass)
       const tx3 = await safientMainBeneficiary.createClaim(safeId[8], '');
@@ -475,6 +476,135 @@ describe('safientMain', async () => {
       // check claim status (DDayBased)
       const safeId4ClaimResult3 = await safientMainAccountX.getClaimStatus(safeId[8], claimID3);
       expect(safeId4ClaimResult3).to.equal(1); // claim got Passed (before E-Day)
+    });
+
+
+    it('Should allow beneficiaries to create a safe (SignalBased) and update to all claim types', async () => {
+      const safientMain = new SafientMain(safeCreatorSigner, chainId);
+
+      let tx, txReceipt;
+
+      await safientMain.createSafe(
+        beneficiaryAddress, // 2nd account
+        safeId[9],
+        Types.ClaimType.SignalBased,
+        10,
+        ''
+      );
+
+      const safientMain2 = new SafientMain(beneficiarySigner, chainId);
+
+      // SUCCESS : create claim on safeId2
+      tx = await safientMain2.createClaim(safeId[9], '');
+      txReceipt = await tx.wait();
+      claimIdOfSafeId1 = parseInt(txReceipt.events[0].args[1]._hex)
+
+      const safeWithSafeId1 = await safientMain2.getSafeBySafeId(safeId[9]);
+      expect(safeWithSafeId1.claimsCount).to.equal(1);
+
+      const claimOnSafeId1 = await safientMain2.getClaimByClaimId(claimIdOfSafeId1);
+      expect(claimOnSafeId1.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId1.status).to.equal(0);
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
+      // SUCCSESS : update claim type to Dday
+      await safientMain.sendUpdateSafe(safeId[9], ClaimType.DDayBased, now + 10, '', false);
+      const safeWithSafeId3 = await safientMain.getSafeBySafeId(safeId[9]);
+      expect(safeWithSafeId3.claimType).to.equal(ClaimType.DDayBased);
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+      // SUCCSESS : update claim type to Eday
+      await safientMain.sendUpdateSafe(safeId[9], ClaimType.Expirion, now + 10, '', false)
+      const safeWithSafeId4 = await safientMain.getSafeBySafeId(safeId[9]);
+      expect(safeWithSafeId4.claimType).to.equal(ClaimType.Expirion);
+    });
+
+    it('Should allow beneficiaries to create a safe (SignalBased) and create claim and do not update claim', async () => {
+      const safientMain = new SafientMain(safeCreatorSigner, chainId);
+
+      let tx, txReceipt;
+
+      await safientMain.createSafe(
+        beneficiaryAddress, // 2nd account
+        safeId[10],
+        Types.ClaimType.SignalBased,
+        10,
+        ''
+      );
+
+      const safientMain2 = new SafientMain(beneficiarySigner, chainId);
+
+      // SUCCESS : create claim on safeId2
+      tx = await safientMain2.createClaim(safeId[10], '');
+      txReceipt = await tx.wait();
+      claimIdOfSafeId1 = parseInt(txReceipt.events[0].args[1]._hex)
+
+      const safeWithSafeId1 = await safientMain2.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId1.claimsCount).to.equal(1);
+
+      const claimOnSafeId1 = await safientMain2.getClaimByClaimId(claimIdOfSafeId1);
+      expect(claimOnSafeId1.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId1.status).to.equal(0);
+
+      // SUCCSESS : send signal
+      await safientMain.sendUpdateSafe(safeId[10], ClaimType.SignalBased, 0, '', false);
+      const safeWithSafeId3 = await safientMain.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId3.claimTimeStamp).to.equal(0);
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
+      // SUCCSESS : update claim type to Dday
+      await safientMain.sendUpdateSafe(safeId[10], ClaimType.DDayBased, now + 10, '', false);
+      const safeWithSafeId4 = await safientMain.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId4.claimType).to.equal(ClaimType.SignalBased);
+    });
+
+    it('Should allow beneficiaries to create a safe (SignalBased) and make deprecated and do not allow to claim or send signal', async () => {
+      const safientMain = new SafientMain(safeCreatorSigner, chainId);
+
+      let tx, txReceipt;
+
+      await safientMain.createSafe(
+        beneficiaryAddress, // 2nd account
+        safeId[10],
+        Types.ClaimType.SignalBased,
+        10,
+        ''
+      );
+
+      const safientMain2 = new SafientMain(beneficiarySigner, chainId);
+
+      // SUCCESS : create claim on safeId2
+      tx = await safientMain2.createClaim(safeId[10], '');
+      txReceipt = await tx.wait();
+      claimIdOfSafeId1 = parseInt(txReceipt.events[0].args[1]._hex)
+
+      const safeWithSafeId1 = await safientMain2.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId1.claimsCount).to.equal(1);
+
+      const claimOnSafeId1 = await safientMain2.getClaimByClaimId(claimIdOfSafeId1);
+      expect(claimOnSafeId1.claimedBy).to.equal(beneficiaryAddress);
+      expect(claimOnSafeId1.status).to.equal(0);
+
+      // SUCCSESS : send signal
+      await safientMain.sendUpdateSafe(safeId[10], ClaimType.SignalBased, 0, '', true);
+      const safeWithSafeId3 = await safientMain.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId3.deprecated).to.equal(true);
+
+      latestBlockNumber = await ethers.provider.getBlockNumber();
+      latestBlock = await ethers.provider.getBlock(latestBlockNumber);
+      now = latestBlock.timestamp;
+
+      // SUCCSESS : update claim type to Dday
+      safientMain.sendUpdateSafe(safeId[10], ClaimType.DDayBased, now + 10, '', false);
+      const safeWithSafeId4 = await safientMain.getSafeBySafeId(safeId[10]);
+      expect(safeWithSafeId4.claimType).to.equal(ClaimType.SignalBased);
     });
   });
 });

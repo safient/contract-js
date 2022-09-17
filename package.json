@@ -1,6 +1,6 @@
 {
   "name": "@safient/contracts",
-  "version": "0.1.19-alpha",
+  "version": "0.1.20-alpha",
   "description": "JavaScript SDK to manage and interact with the safe claims on Safient protocol.",
   "keywords": [
     "Web3",

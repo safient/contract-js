@@ -96,6 +96,7 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         returns (bool)
     {
         Types.Safe memory safe = safes[_safeId];
+        require(!safe.deprecated, "Safe has been deprecated");
 
         if (safe.claimType == Types.ClaimType.ArbitrationBased) {
             uint256 arbitrationCost = arbitrator.arbitrationCost("");
@@ -193,15 +194,6 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
     }
 
     /**
-     * @notice Signal the safe in response to the claim made on
-     * the safe
-     * @param _safeId Id of the safe
-     */
-    function sendSignal(string memory _safeId) external returns (bool) {
-        return _sendSignal(_safeId);
-    }
-
-    /**
      * @notice Get the status of a claim
      * @param _safeId Id of the safe
      * @param _claimId Id of the claim
@@ -283,22 +275,20 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         return _claimRewards(_funds);
     }
 
-    /**
-     * @notice Update the D-Day
-     * @param _safeId Id of the safe
-     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
-     */
-    function updateDDay(string memory _safeId, uint256 _DDay)
-        external
-        returns (bool)
-    {
-        return _updateDDay(_safeId, _DDay);
-    }
-
-     function updateEDay(string memory _safeId, uint256 _DDay)
-        external
-        returns (bool)
-    {
-        return _updateEDay(_safeId, _DDay);
+    function updateSafe(
+        string calldata _safeId,
+        Types.ClaimType _claimType,
+        uint256 _claimPeriod,
+        string calldata _metaEvidence,
+        bool _deprecated
+    ) external returns (bool) {
+        return
+            _updateSafe(
+                _safeId,
+                _claimType,
+                _claimPeriod,
+                _metaEvidence,
+                _deprecated
+            );
     }
 }

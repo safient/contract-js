@@ -208,20 +208,6 @@ export class SafientMain {
   };
 
   /**
-   * This function signals a safe in response to the claim made on that safe
-   * @param safeId Id of the safe
-   * @returns A transaction response
-   */
-  sendSignal = async (safeId: string): Promise<TransactionResponse> => {
-    try {
-      this.tx = await this.contract.sendSignal(safeId);
-      return this.tx;
-    } catch (e: any) {
-      this.logger.throwError(e.message);
-    }
-  };
-
-  /**
    * This function returns the status (0 - Active, 1 - Passed, 2 - Failed or 3 - Refused To Arbitrate) of a claim by it's id
    * @param safeId Id of the safe
    * @param claimId Id of the claim
@@ -356,26 +342,27 @@ export class SafientMain {
   };
 
   /**
-   * This function updates the D-Day of a safe
+   * This function updates the Claim of a safe
    * @param safeId Id of the safe
-   * @param dDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
+   * @param beneficiary address of the benificiary
+   * @param claimType Need to send if claimType needs to be updated along with claimPeriod
+   * @param claimPeriod The timestamp in unix epoch milliseconds to update claimPeriod
+   * @param metaEvidence
+   * @param deprecated boolean defines if safe is deprecated set true to deprecate safe
    * @returns A transaction response
    */
-  updateDDay = async (safeId: string, dDay: number): Promise<TransactionResponse> => {
-    try {
-      this.tx = await this.contract.updateDDay(safeId, dDay);
-      return this.tx;
-    } catch (e: any) {
-      this.logger.throwError(e.message);
-    }
-  };
 
-  updateEDay = async (safeId: string, eDay: number): Promise<TransactionResponse> => {
+  sendUpdateSafe = async (
+    safeId: string,
+    claimType: ClaimType,
+    claimPeriod: number,
+    metaevidenceURI: string,
+    deprecated: boolean): Promise<boolean> => {
     try {
-      this.tx = await this.contract.updateEDay(safeId, eDay);
-      return this.tx;
+      const isUpdated = await this.contract.updateSafe(safeId, claimType, claimPeriod, metaevidenceURI, deprecated);
+      return isUpdated;
     } catch (e: any) {
-      this.logger.throwError(e.message);
+      return e;
     }
   };
 }

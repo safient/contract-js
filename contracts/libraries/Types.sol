@@ -34,6 +34,7 @@ library Types {
         uint256 metaEvidenceId;
         uint256 claimsCount;
         uint256 funds;
+        bool deprecated;
     }
 
     struct Claim {

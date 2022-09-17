@@ -2,8 +2,8 @@
   "localhost": {
     "chainId": 31337,
     "addresses": {
-      "AutoAppealableArbitrator": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-      "SafientMain": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+      "AutoAppealableArbitrator": "0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD",
+      "SafientMain": "0x51A1ceB83B83F1985a81C295d1fF28Afef186E02"
     }
   },
   "mainnet": {

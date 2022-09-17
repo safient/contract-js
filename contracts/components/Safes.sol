@@ -67,6 +67,7 @@ contract Safes {
     modifier depositSafeFunds(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
 
+        require(!safe.deprecated, "Safe has been deprecated");
         require(safe.currentOwner != address(0), "Safe does not exist");
         _;
     }
@@ -81,56 +82,19 @@ contract Safes {
             "Only safe owner can withdraw the deposit balance"
         );
 
+        require(!safe.deprecated, "Safe has been deprecated");
+
         require(safe.funds != 0, "No funds remaining in the safe");
         _;
     }
 
-    modifier signal(string memory _safeId) {
+    modifier SafeOwner(string memory _safeId) {
         Types.Safe memory safe = safes[_safeId];
-
         require(
             msg.sender == safe.currentOwner,
             "Only safe current owner can send the signal"
         );
-
-        require(
-            safe.claimTimeStamp != 0,
-            "Safe is not claimed since safe's endSignalTime is zero"
-        );
-
-        require(
-            block.timestamp < safe.claimTimeStamp,
-            "Signaling period is over"
-        );
-
-        // require(
-        //     safe.latestSignalTime == 0,
-        //     "Safe is not claimed since safe's latestSignalTime is not zero"
-        // );
-        _;
-    }
-
-    modifier DDayUpdate(string memory _safeId) {
-        Types.Safe memory safe = safes[_safeId];
-
-        require(
-            msg.sender == safe.currentOwner,
-            "Only safe current owner can updade the D Day"
-        );
-
-        require(block.timestamp < safe.claimPeriod, "DDay has already passed");
-        _;
-    }
-
-    modifier EDayUpdate(string memory _safeId) {
-        Types.Safe memory safe = safes[_safeId];
-
-        require(
-            msg.sender == safe.currentOwner,
-            "Only safe current owner can updade the E Day"
-        );
-
-        require(block.timestamp < safe.claimPeriod, "EDay has expired");
+        require(!safe.deprecated, "Safe has been deprecated");
         _;
     }
 
@@ -170,10 +134,11 @@ contract Safes {
             beneficiary: _beneficiary,
             claimPeriod: _claimPeriod,
             claimType: _claimType,
-            claimTimeStamp : 0,
+            claimTimeStamp: 0,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
-            funds: msg.value
+            funds: msg.value,
+            deprecated: false
         });
 
         safesCount += 1;
@@ -211,12 +176,13 @@ contract Safes {
             createdBy: _creator,
             currentOwner: _creator,
             beneficiary: msg.sender,
-            claimPeriod : _claimPeriod,
+            claimPeriod: _claimPeriod,
             claimType: _claimType,
-            claimTimeStamp : 0,
+            claimTimeStamp: 0,
             metaEvidenceId: metaEvidenceID,
             claimsCount: 0,
-            funds: msg.value
+            funds: msg.value,
+            deprecated: false
         });
 
         safesCount += 1;
@@ -272,54 +238,97 @@ contract Safes {
         return sent;
     }
 
-    /**
-     * @notice Signal the safe in response to the claim made on
-     * the safe
-     * @param _safeId Id of the safe
-     */
-    function _sendSignal(string memory _safeId)
-        internal
-        signal(_safeId)
-        returns (bool)
-    {
+    function updateClaimType(
+        string calldata _safeId,
+        Types.ClaimType _claimType,
+        uint256 _claimPeriod,
+        string calldata _metaEvidence
+    ) internal returns (bool) {
         Types.Safe memory safe = safes[_safeId];
-
-        // safe.latestSignalTime = block.timestamp;
-        safe.claimTimeStamp = 0;
+        if (_claimType == Types.ClaimType.ArbitrationBased) {
+            metaEvidenceID += 1;
+            emit MetaEvidence(metaEvidenceID, _metaEvidence);
+        }
+        safe.claimType = _claimType;
+        safe.claimPeriod = _claimPeriod;
+        safe.metaEvidenceId = metaEvidenceID;
         safes[_safeId] = safe;
-
         return true;
     }
 
-    /**
-     * @notice Update the D-Day
-     * @param _safeId Id of the safe
-     * @param _DDay The timestamp in unix epoch milliseconds after which the beneficiary can directly claim the safe
-     */
-    function _updateDDay(string memory _safeId, uint256 _DDay)
-        internal
-        DDayUpdate(_safeId)
-        returns (bool)
-    {
+    function _updateSafe(
+        string calldata _safeId,
+        Types.ClaimType _claimType,
+        uint256 _claimPeriod,
+        string calldata _metaEvidence,
+        bool _deprecated
+    ) internal SafeOwner(_safeId) returns (bool) {
         Types.Safe memory safe = safes[_safeId];
-
-        safe.claimPeriod = _DDay;
-        safes[_safeId] = safe;
-
-        return true;
+        if (_deprecated) {
+            safe.deprecated = true;
+            safes[_safeId] = safe;
+            return true;
+        }
+        if (safe.claimType == Types.ClaimType.SignalBased) {
+            require(
+                safe.claimTimeStamp != 0,
+                "Safe is not claimed since safes endSignalTime is zero"
+            );
+            require(
+                block.timestamp < safe.claimTimeStamp,
+                "Signaling period is over"
+            );
+            if (safe.claimType != _claimType) {
+                // update claim type & claim period
+                return
+                    updateClaimType(
+                        _safeId,
+                        _claimType,
+                        _claimPeriod,
+                        _metaEvidence
+                    );
+            } else {
+                safe.claimTimeStamp = 0;
+                safes[_safeId] = safe;
+                return true;
+            }
+        } else if (safe.claimType == Types.ClaimType.ArbitrationBased) {
+            // need to discuss
+        } else if (safe.claimType == Types.ClaimType.DDayBased) {
+            require(
+                block.timestamp < safe.claimPeriod,
+                "DDay has already passed"
+            );
+            if (safe.claimType != _claimType) {
+                // update claim type & claim period
+                return
+                    updateClaimType(
+                        _safeId,
+                        _claimType,
+                        _claimPeriod,
+                        _metaEvidence
+                    );
+            } else {
+                safe.claimPeriod = _claimPeriod;
+                safes[_safeId] = safe;
+                return true;
+            }
+        } else if (safe.claimType == Types.ClaimType.Expirion) {
+            require(block.timestamp < safe.claimPeriod, "EDay has expired");
+            if (safe.claimType != _claimType) {
+                // update claim type & claim period
+                return
+                    updateClaimType(
+                        _safeId,
+                        _claimType,
+                        _claimPeriod,
+                        _metaEvidence
+                    );
+            } else {
+                safe.claimPeriod = _claimPeriod;
+                safes[_safeId] = safe;
+                return true;
+            }
+        }
     }
-
-    function _updateEDay(string memory _safeId, uint256 _EDay)
-        internal
-        EDayUpdate(_safeId)
-        returns (bool)
-    {
-        Types.Safe memory safe = safes[_safeId];
-
-        safe.claimPeriod = _EDay;
-        safes[_safeId] = safe;
-
-        return true;
-    }
-    
 }
