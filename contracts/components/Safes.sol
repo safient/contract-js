@@ -262,7 +262,7 @@ contract Safes {
         uint256 _claimPeriod,
         string calldata _metaEvidence,
         bool _deprecated
-    ) internal SafeOwner(_safeId) returns (bool) {
+    ) internal SafeOwner(_safeId) returns (bool status) {
         Types.Safe memory safe = safes[_safeId];
         if (_deprecated) {
             safe.deprecated = true;
