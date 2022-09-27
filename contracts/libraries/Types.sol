@@ -23,6 +23,14 @@ library Types {
         Expirion
     }
 
+    enum ClaimAction {
+        Update,
+        Signal,
+        Dday,
+        Eday,
+        Deprecated
+    }
+
     struct Safe {
         string id;
         address createdBy;

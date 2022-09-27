@@ -258,18 +258,17 @@ contract Safes {
 
     function _updateSafe(
         string calldata _safeId,
+         Types.ClaimAction _claimAction,
         Types.ClaimType _claimType,
         uint256 _claimPeriod,
-        string calldata _metaEvidence,
-        bool _deprecated
+        string calldata _metaEvidence
     ) internal SafeOwner(_safeId) returns (bool status) {
         Types.Safe memory safe = safes[_safeId];
-        if (_deprecated) {
+        if (_claimAction == Types.ClaimAction.Deprecated) {
             safe.deprecated = true;
             safes[_safeId] = safe;
             return true;
-        }
-        if (safe.claimType == Types.ClaimType.SignalBased) {
+        } else if (_claimAction == Types.ClaimAction.Signal) {
             require(
                 safe.claimTimeStamp != 0,
                 "Safe is not claimed since safes endSignalTime is zero"
@@ -278,57 +277,49 @@ contract Safes {
                 block.timestamp < safe.claimTimeStamp,
                 "Signaling period is over"
             );
-            if (safe.claimType != _claimType) {
-                // update claim type & claim period
-                return
-                    updateClaimType(
-                        _safeId,
-                        _claimType,
-                        _claimPeriod,
-                        _metaEvidence
-                    );
-            } else {
-                safe.claimTimeStamp = 0;
-                safes[_safeId] = safe;
-                return true;
-            }
-        } else if (safe.claimType == Types.ClaimType.ArbitrationBased) {
-            // need to discuss
-        } else if (safe.claimType == Types.ClaimType.DDayBased) {
+            safe.claimTimeStamp = 0;
+            safes[_safeId] = safe;
+            return true;
+        } else if (_claimAction == Types.ClaimAction.Dday) {
             require(
                 block.timestamp < safe.claimPeriod,
                 "DDay has already passed"
             );
-            if (safe.claimType != _claimType) {
-                // update claim type & claim period
-                return
-                    updateClaimType(
-                        _safeId,
-                        _claimType,
-                        _claimPeriod,
-                        _metaEvidence
-                    );
-            } else {
-                safe.claimPeriod = _claimPeriod;
-                safes[_safeId] = safe;
-                return true;
-            }
-        } else if (safe.claimType == Types.ClaimType.Expirion) {
+            safe.claimPeriod = _claimPeriod;
+            safes[_safeId] = safe;
+            return true;
+        } else if (_claimAction == Types.ClaimAction.Eday) {
             require(block.timestamp < safe.claimPeriod, "EDay has expired");
-            if (safe.claimType != _claimType) {
-                // update claim type & claim period
-                return
-                    updateClaimType(
-                        _safeId,
-                        _claimType,
-                        _claimPeriod,
-                        _metaEvidence
-                    );
-            } else {
-                safe.claimPeriod = _claimPeriod;
-                safes[_safeId] = safe;
-                return true;
+            safe.claimPeriod = _claimPeriod;
+            safes[_safeId] = safe;
+            return true;
+        } else if (_claimAction == Types.ClaimAction.Update) {
+            if (safe.claimType == Types.ClaimType.SignalBased) {
+                require(
+                    safe.claimTimeStamp != 0,
+                    "Safe is not claimed since safes endSignalTime is zero"
+                );
+                require(
+                    block.timestamp < safe.claimTimeStamp,
+                    "Signaling period is over"
+                );
             }
+            if (safe.claimType == Types.ClaimType.DDayBased) {
+                require(
+                    block.timestamp < safe.claimPeriod,
+                    "DDay has already passed"
+                );
+            }
+            if (safe.claimType == Types.ClaimType.Expirion) {
+                require(block.timestamp < safe.claimPeriod, "EDay has expired");
+            }
+            return
+                updateClaimType(
+                    _safeId,
+                    _claimType,
+                    _claimPeriod,
+                    _metaEvidence
+                );
         }
     }
 }

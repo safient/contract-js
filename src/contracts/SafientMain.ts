@@ -4,6 +4,7 @@ import {
   Claim,
   ClaimStatus,
   ClaimType,
+  ClaimAction,
   RecoveryProof,
   Safe,
   Signer,
@@ -357,9 +358,9 @@ export class SafientMain {
     claimType: ClaimType,
     claimPeriod: number,
     metaevidenceURI: string,
-    deprecated: boolean): Promise<boolean> => {
+    claimAction: ClaimAction): Promise<boolean> => {
     try {
-      const isUpdated = await this.contract.updateSafe(safeId, claimType, claimPeriod, metaevidenceURI, deprecated);
+      const isUpdated = await this.contract.updateSafe(safeId, claimType, claimPeriod, metaevidenceURI, claimAction);
       return isUpdated;
     } catch (e: any) {
       return e;

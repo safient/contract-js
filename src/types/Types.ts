@@ -52,3 +52,11 @@ export enum ClaimType {
   DDayBased,
   Expirion
 }
+
+export enum ClaimAction {
+  Update,
+  Signal,
+  Dday,
+  Eday,
+  Deprecated
+}

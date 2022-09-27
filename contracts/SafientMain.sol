@@ -280,15 +280,15 @@ contract SafientMain is Safes, Claims, Guardians, IArbitrable {
         Types.ClaimType _claimType,
         uint256 _claimPeriod,
         string calldata _metaEvidence,
-        bool _deprecated
+        Types.ClaimAction _claimAction
     ) external returns (bool) {
         return
             _updateSafe(
                 _safeId,
+                _claimAction,
                 _claimType,
                 _claimPeriod,
-                _metaEvidence,
-                _deprecated
+                _metaEvidence
             );
     }
 }
